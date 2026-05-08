@@ -1,0 +1,13 @@
+# Codex CLI configuration for the Fullstack Orchestrator template.
+# This file is read when `codex` is invoked from this project's working directory.
+
+model = "gpt-5.4"
+
+# Non-interactive mode: do not prompt for approval. Codex operates in a
+# read-only sandbox by default; mutations happen via the orchestrator's
+# Edit/Write tools after Codex returns its plan.
+approval_policy = "never"
+
+# Skip the git repo check so codex exec works in a freshly-cloned template
+# directory before /init-webdev creates project scaffolding.
+# (CLI flag `--skip-git-repo-check` is the orchestrator's preferred override.)

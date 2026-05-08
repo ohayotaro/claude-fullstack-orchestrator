@@ -1,0 +1,14 @@
+{
+  "model": {
+    "name": "gemini-2.5-pro"
+  },
+  "tools": {
+    "vision": true,
+    "pdf": true,
+    "video": true
+  },
+  "output": {
+    "format_default": "json",
+    "structured_output_required": true
+  }
+}
