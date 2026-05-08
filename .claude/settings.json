@@ -65,5 +65,12 @@
       "Bash(flutter:*)",
       "Bash(playwright:*)"
     ]
+  },
+  "mcpServers": {
+    "figma-dev-mode": {
+      "type": "http",
+      "url": "http://127.0.0.1:3845/mcp",
+      "_comment": "Figma Dev Mode MCP. Enable in Figma Desktop: Preferences → Enable Dev Mode MCP Server. Requires Figma Pro/Org/Enterprise + Dev Mode access. Server starts on port 3845 by default; override the URL above if your Figma is configured differently. When this server is unreachable, /design-extract and /design-research fall back to Gemini analysis of static exports."
+    }
   }
 }

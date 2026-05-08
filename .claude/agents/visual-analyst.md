@@ -16,11 +16,15 @@ This agent does NOT generate visual content. Generation is out of scope for v0.1
 ## Primary responsibilities
 
 - Drive `/design-research` (competitor / reference UI analysis)
-- Drive `/design-extract` (token JSON, screen decomposition schema from images)
+- Drive `/design-extract` (token JSON, screen decomposition schema from images, OR via Figma Dev Mode MCP when available)
 - Drive `/visual-verify` (baseline vs candidate screenshot diff judgment)
 - Drive `/visual-regression` (diff triage)
 - Read PDF brand guidelines and produce a token-extraction proposal
 - Read ER diagrams or architecture diagrams and produce a textual model
+
+## Source preference
+
+For Figma input: prefer the `figma-dev-mode` MCP server (registered in `.claude/settings.json`) over Gemini static analysis when available. MCP returns authoritative Variables, components, and Code Connect mappings; Gemini approximates from pixels. Static-export Gemini path remains the fallback for non-Figma references and when MCP is unreachable.
 
 ## Tools and Editing
 

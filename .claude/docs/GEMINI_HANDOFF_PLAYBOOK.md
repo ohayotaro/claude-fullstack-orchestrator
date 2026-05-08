@@ -157,3 +157,13 @@ Output JSON with each section as a field. Confidence per major claim.
 - When `confidence_overall == "low"`, the orchestrator MUST surface to the user before any agent acts on the result.
 - Do NOT use Gemini for code generation tasks — that is Codex's domain.
 - Visual generation is out of scope.
+
+## Figma: prefer MCP over visual analysis
+
+When the input is a Figma URL / file key AND the `figma-dev-mode` MCP server is reachable (registered in `.claude/settings.json`, Figma Desktop running with Dev Mode MCP enabled), use the MCP path instead of Gemini visual analysis:
+
+- `get_variable_defs` returns authoritative design Variables — use as source-of-truth tokens (`confidence: high`) rather than approximating from pixels
+- `get_code` and `get_code_connect_map` reveal which Figma components are already wired to code components
+- `get_image` provides a visual record alongside the structured data
+
+Fall back to Gemini only when MCP is unavailable or the input is a static export. Both `/design-extract` and `/design-research` already encode this preference.

@@ -19,16 +19,43 @@ Both come with confidence ratings; uncertain items are flagged for human approva
 - Starting a feature with a competitor or reference screenshot
 - Importing a Figma export and wanting tokens + structure separately
 - Reading a brand PDF page to seed the design system
+- Live Figma file analysis when Dev Mode MCP is available (preferred over static export)
+
+## Source of truth (preferred order)
+
+1. **Figma Dev Mode MCP** (if available): live read of layers, components, design Variables, Code Connect mappings. Highest fidelity.
+2. **Figma static export** (PNG / SVG / PDF): Gemini visual analysis. Useful when MCP is not configured or the user only has assets, not file access.
+3. **Competitor / brand reference**: Gemini visual analysis.
+
+The `figma-dev-mode` MCP server is registered in `.claude/settings.json`. When reachable (Figma Desktop running with Dev Mode MCP enabled at `http://127.0.0.1:3845/mcp`), prefer the MCP path. Otherwise fall back to Gemini.
 
 ## Prerequisites
 
-- The input file (image / PDF page) is on disk; provide its path
+- For static-export path: input file (image / PDF page) on disk; provide its path
+- For MCP path: Figma Desktop running with Dev Mode MCP enabled, plus the Figma URL / file key / node id of the target
 
 ## Steps
 
-### 1. Validate the input
+### 1. Decide path
 
-- File exists and is a supported format (PNG / JPG / PDF page)
+Check whether the `figma-dev-mode` MCP server is reachable. If yes AND the input is a Figma URL / file key, prefer the MCP path. Otherwise use the Gemini static-export path.
+
+### 1a. MCP path (live Figma)
+
+Use the Figma Dev Mode MCP tools (typically `get_code`, `get_image`, `get_variable_defs`, `get_code_connect_map`):
+
+- `get_variable_defs` → dump design Variables → map directly to `design/extracted/<source>-tokens.json` with `confidence: high` (these are the source of truth)
+- `get_code` on the selected frame → returns suggested code structure that informs the screen schema
+- `get_image` → snapshot for the visual record
+- `get_code_connect_map` → resolve which Figma components are already wired to code components
+
+When MCP gives authoritative data (Variables, Code Connect), confidence is `high` for those fields and `human_approval_required` only flags genuinely ambiguous interactive details.
+
+Skip steps 2 and 3 (they are for the Gemini path); jump to step 5 with the MCP-derived JSON.
+
+### 1b. Validate the static-export input (Gemini path)
+
+- File exists and is a supported format (PNG / JPG / SVG / PDF page)
 - Resolution is reasonable (>=1024px on the long side); if low, warn and proceed with reduced confidence
 
 ### 2. Determine the extraction goal
@@ -39,7 +66,7 @@ Use `AskUserQuestion`:
 - `screen-only`: just produce screen decomposition
 - `both` (default): produce both
 
-### 3. Delegate to Gemini
+### 3. Delegate to Gemini (static-export path only)
 
 Invoke the Gemini-side `/design-extract` flow (under `.gemini/skills/design-extract/`) with:
 

@@ -18,7 +18,12 @@ Turn visual references into structured engineering input. Identifies layout patt
 ## Inputs
 
 - One or more image files (`.png`, `.jpg`, `.webp`) or PDFs
+- Or live Figma frames via the `figma-dev-mode` MCP server (when registered in `.claude/settings.json` and Figma Desktop is running with Dev Mode MCP enabled)
 - Optional: a list of focus questions (what specifically to compare)
+
+## MCP vs static export
+
+For competitor analysis the input is usually a static screenshot — use the Gemini path. For analyzing your own designs in Figma, the MCP path gives authoritative Variables / component data; use it when comparing your current design to a target.
 
 ## Steps
 

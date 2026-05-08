@@ -44,6 +44,7 @@ After both wizards, `CLAUDE.md` Zone B describes your stack and the relevant `la
 | Gemini CLI | ≥0.38 | `npm i -g @google/gemini-cli` |
 | Git | any | system package manager |
 | Python | ≥3.10 | for hooks (`.claude/hooks/*.py`) |
+| Figma Desktop (optional) | latest | for live Figma access via the `figma-dev-mode` MCP server registered in `.claude/settings.json`. Enable in Figma Desktop → Preferences → "Enable Dev Mode MCP Server" (requires Pro/Org/Enterprise + Dev Mode). When unreachable, `/design-extract` and `/design-research` fall back to Gemini static-export analysis. |
 
 After install:
 

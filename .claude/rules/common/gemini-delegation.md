@@ -5,12 +5,16 @@ Gemini CLI (Gemini 2.5 Pro) is the multimodal external agent. Use for input that
 ## When to delegate to Gemini
 
 - UI screenshot comparison (competitor / baseline / candidate)
-- Figma export decomposition (token JSON, screen schema)
+- Figma **static export** decomposition (token JSON, screen schema) — when live MCP access is not available
 - Brand guideline PDF reading
 - Long-document summarization (research papers, RFCs)
 - ER diagram analysis
 - Architecture diagram analysis
 - Video / audio analysis (when applicable)
+
+### Figma source preference
+
+When the input is a Figma file (URL / file key) and the `figma-dev-mode` MCP server is reachable, prefer the **MCP path** over Gemini visual analysis — MCP gives authoritative Variables, components, and Code Connect mappings rather than approximations from pixels. Fall back to Gemini when MCP is not configured or the input is a static export only.
 
 ## When NOT to delegate to Gemini
 
