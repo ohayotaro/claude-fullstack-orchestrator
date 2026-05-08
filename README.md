@@ -94,16 +94,71 @@ See `DESIGN.md` for the full architecture, routing policy, and rationale.
 
 ## Skills
 
-| Category | Skills |
-|---|---|
-| Setup | `/init-webdev`, `/backend-init` |
-| Feature pipeline | `/start-feature`, `/team-implement`, `/team-review`, `/architecture-review` |
-| Design (analysis) | `/design-research`, `/design-extract`, `/component-build`, `/screen-build` |
-| State / API / data / auth | `/state-design`, `/api-build`, `/data-design`, `/auth-design` |
-| Backend specialty | `/job-design`, `/infra-review` |
-| Quality | `/visual-verify`, `/visual-regression`, `/a11y-audit`, `/perf-audit`, `/e2e-test` |
-| Ops | `/deploy`, `/codex-debugger`, `/incident-response`, `/incident-backend`, `/checkpointing` |
-| Adapters | `/codex-system`, `/gemini-system`, `/parallel-batch` |
+29 skills organized by purpose. Full spec for each is at `.claude/skills/<name>/SKILL.md`. The "Owner" column lists the agent or external CLI that performs the heavy work; the orchestrator drives the flow but does not implement.
+
+### Setup
+
+| Skill | Purpose | Owner |
+|---|---|---|
+| `/init-webdev` | Frontend / mobile wizard. Asks framework, styling, state lib, testing tools, monorepo; populates CLAUDE.md Zone B and `active_rules.lang`. | — |
+| `/backend-init` | Backend wizard. Asks scope, language(s), framework, API style, DB engine + ORM + migration tool, cache, broker, blob storage, auth mode, deploy target, observability stack. | — |
+
+### Feature pipeline
+
+| Skill | Purpose | Owner |
+|---|---|---|
+| `/start-feature` | Multi-agent feature kickoff: codebase exploration → parallel research → Codex design → plan integration with user approval. | general-purpose + Codex |
+| `/team-implement` | Agent Teams parallel implementation across disjoint file scopes; per-teammate completion logs to `.claude/logs/agent-teams/`. | role-specific agents |
+| `/team-review` | 5-track parallel review — Security, Quality, a11y, Perf, Architecture — with deduplicated, prioritized findings. | Codex per track |
+| `/architecture-review` | Focused review of state / navigation / package / service boundaries and contract drift; usable standalone or as `/team-review`'s 5th track. | state-architect + api-engineer + Codex |
+
+### Design (analysis-only — no generation)
+
+| Skill | Purpose | Owner |
+|---|---|---|
+| `/design-research` | Structured analysis of references (competitor screenshots, brand decks, Figma frames). Returns layout / visual identity / interaction surface / a11y cues / patterns with confidence ratings. | visual-analyst → Gemini (or Figma MCP) |
+| `/design-extract` | Token JSON + screen decomposition. Prefers Figma Dev Mode MCP (live Variables, Code Connect mappings); falls back to Gemini static-export analysis. | visual-analyst → Figma MCP / Gemini |
+| `/component-build` | Single design-system component: primitives, preview/storybook, a11y semantics built in, unit + a11y tests. | design-system-engineer |
+| `/screen-build` | Feature-screen composition consuming primitives, wired with state + navigation + data fetching. Explicit loading / error / empty states. | ui-engineer |
+| `/state-design` | State architecture decision (server / URL / local / global) per Zone B `state_lib`; Codex review for non-trivial cases. | state-architect + Codex |
+
+### Backend
+
+| Skill | Purpose | Owner |
+|---|---|---|
+| `/api-build` | API endpoint or service. Phase 1 contract (with Codex review) → Phase 2 handler / validation / errors → Phase 3 tests + observability. BFF mode when `backend_scope=bff-only`, full-backend mode otherwise. | api-engineer + Codex |
+| `/data-design` | Schema / migration / index design. `migration-check.py` hook gates destructive changes; Codex review for non-trivial cases. | data-engineer + Codex |
+| `/auth-design` | Auth flow — sequence diagram, token lifecycle, storage decisions, threat model. Codex reviews for OWASP-relevant concerns. | auth-security-engineer + Codex |
+| `/job-design` | Background jobs / queue workers / scheduled tasks. Producer contract + broker topology + worker logic + idempotency + retry + DLQ + replay procedure. | job-engineer + Codex |
+| `/infra-review` | 9-lens review: container / runtime / CI-CD / health / autoscale / network / observability / DR / cost. | infra-engineer + Codex |
+
+### Quality
+
+| Skill | Purpose | Owner |
+|---|---|---|
+| `/visual-verify` | Per-surface render-correctness check: capture screenshot → Gemini diff against baseline → verdict `pass | review | fail` with confidence. | qa-engineer + Gemini |
+| `/visual-regression` | Project-wide baseline management. Sweeps surfaces from `.claude/visual-regression.json`, runs `/visual-verify` per surface, gates baseline updates on user approval. | qa-engineer + Gemini |
+| `/a11y-audit` | WCAG 2.2 AA + native a11y. Runs axe-core / Lighthouse / iOS Accessibility Inspector / Android Accessibility Scanner with manual checklist for items automation misses. | a11y-auditor |
+| `/perf-audit` | Measurement-first audit: Lighthouse + Bundle Analyzer (web), Instruments (iOS), Macrobenchmark (Android), DevTools (Flutter), latency p95 + query plans (backend). | perf-optimizer + Codex |
+| `/e2e-test` | Generate or extend e2e tests in the project's runner — Playwright / Detox / XCUITest / Espresso / integration_test — with page-object pattern and determinism rules. | qa-engineer |
+
+### Operations
+
+| Skill | Purpose | Owner |
+|---|---|---|
+| `/deploy` | Target-aware deploy: Vercel / Cloudflare / ECS Fargate / GKE / Render / Fly / TestFlight / Play Console / etc. Pre-flight, smoke check, explicit rollback. | infra-engineer |
+| `/codex-debugger` | Skill (not agent) wrapping Codex CLI for deep bug analysis when Opus subagents cannot localize. Returns ranked hypotheses + verification + fix. | general-purpose → Codex |
+| `/incident-response` | Frontend / cross-cutting incident — 6 phases (stabilize → mitigate → root cause → durable fix → post-mortem → action items). Includes post-mortem template. | Codex + relevant agents |
+| `/incident-backend` | Backend-focused triage with decision tree mapping symptom (5xx / latency / queue stuck / pool exhausted / replica lag / migration broken) to the right agent. | infra/data/auth/api engineers + Codex |
+| `/checkpointing` | Zone C snapshot + 6 drift checks (CLAUDE.md ↔ skills/agents, contract-watch dead patterns, Zone B vs project state, routing-keywords vs agents). | — |
+
+### Adapters
+
+| Skill | Purpose | Owner |
+|---|---|---|
+| `/codex-system` | One-off Codex consultation. Encodes the `< /dev/null` + `--skip-git-repo-check` invocation that prevents stdin-wait hangs. | Codex |
+| `/gemini-system` | One-off Gemini multimodal task with JSON-only output contract per `.gemini/GEMINI.md` schemas. | Gemini |
+| `/parallel-batch` | High-throughput mechanical work via `general-purpose` Opus × N with disjoint file scopes. Refuses (and routes to `/team-implement`) if judgment is required. | general-purpose × N |
 
 ## Updating the template
 
