@@ -4,7 +4,7 @@ Version 0.3.0-draft | 2026-05-09
 
 > v0.2 (frontend-only) からスコープを **fullstack** に拡張。Codex の v0.2 レビュー (`DESIGN_DECISIONS_codex_2026-05-09.md`) で確定した 4 決定を反映:
 > 1. backend specialists 追加 (5 agents, 7 skills, Zone B 拡張)
-> 2. リポジトリ名は **`claude-fullstack-orchestrator`** に改名
+> 2. リポジトリ名は **`claude-fullstack-orchestrator`** に改名 (後に family naming 統一のため `claude-fullstack` に簡略化)
 > 3. Vue/Svelte は **extension** (将来の `rules/framework/{vue,svelte}/`)
 > 4. `active_rules` は **CLAUDE.md Zone B** に宣言
 
@@ -37,7 +37,7 @@ Claude Code (Opus 4.7, 1M context) を orchestrator とし、Codex CLI / Gemini 
    - Code / commit / docs: 英語固定
 
 **参照テンプレート**:
-- `ohayotaro/claude-orchestrator` (財務版) — 3-Zone CLAUDE.md, hook-driven routing, `.claude/.codex/.gemini` パッケージング
+- `ohayotaro/claude-finance` (財務版、旧名 `claude-orchestrator`) — 3-Zone CLAUDE.md, hook-driven routing, `.claude/.codex/.gemini` パッケージング
 - `DeL-TaiseiOzaki/claude-code-orchestra` — `/start-feature → /team-implement → /team-review` コアワークフロー
 - `affaan-m/everything-claude-code` — 多言語 rules 配置 (`common/` + `lang/*` + 将来 `framework/*`)
 
@@ -345,7 +345,7 @@ active_rules:
 ## 8. Directory Structure（テンプレ側）
 
 ```
-claude-fullstack-orchestrator/
+claude-fullstack/
 ├── CLAUDE.md                           # 3-Zone contract
 ├── DESIGN.md                           # this file
 ├── README.md
@@ -386,7 +386,7 @@ claude-fullstack-orchestrator/
 
 ```bash
 cd /path/to/your-project
-git clone --depth 1 https://github.com/ohayotaro/claude-fullstack-orchestrator.git .starter \
+git clone --depth 1 https://github.com/ohayotaro/claude-fullstack.git .starter \
   && cp -r .starter/.claude .starter/.codex .starter/.gemini .starter/CLAUDE.md . \
   && rm -rf .starter
 claude
@@ -484,7 +484,7 @@ claude
 
 - [x] Stack-agnostic (web/iOS/Android/RN/Flutter/desktop/backend、`/init-webdev` + `/backend-init` で確定)
 - [x] Agent 名前は役割ベース (14 個: 9 frontend + 5 backend)
-- [x] **Repo name = `claude-fullstack-orchestrator`** (Codex H confidence)
+- [x] **Repo name = `claude-fullstack-orchestrator`** (Codex H confidence) — 後に `claude-fullstack` へ簡略化 (sibling `claude-finance` と命名対称)
 - [x] Backend scope: api / data / auth-security / infra / job (5 agents、7 skills)
 - [x] **bff-engineer は廃止 → api-engineer に吸収** (`backend_scope` で mode 切替)
 - [x] Lang rules v0.1 同梱: `common/` + `lang/{typescript, node-typescript, python, swift, kotlin, dart}/` (6 言語)
@@ -521,4 +521,4 @@ claude
 
 ## 16. Repository Migration
 
-GitHub repo は `claude-webdev-orchestrator` → `claude-fullstack-orchestrator` に rename する。GitHub は redirect を維持するが、local remote URL は新URLに更新する。
+GitHub repo は `claude-webdev-orchestrator` → `claude-fullstack-orchestrator` → `claude-fullstack` の順で段階的に rename された。後者の簡略化は sibling repo `claude-finance` (旧 `claude-orchestrator`) と family naming を揃えるため。GitHub は各 rename 後に旧URL の redirect を維持する。local remote URL は最新URLに更新済み。

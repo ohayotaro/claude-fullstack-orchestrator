@@ -5,7 +5,7 @@
 # backups.
 #
 # Usage (from project root):
-#   bash <(curl -fsSL https://raw.githubusercontent.com/ohayotaro/claude-fullstack-orchestrator/main/scripts/update.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/ohayotaro/claude-fullstack/main/scripts/update.sh)
 #
 # Or, if scripts/update.sh has already been copied locally:
 #   ./scripts/update.sh
@@ -40,7 +40,7 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/ohayotaro/claude-fullstack-orchestrator.git"
+REPO_URL="https://github.com/ohayotaro/claude-fullstack.git"
 TMP_DIR=".starter-update"
 BACKUP_ZONE_B=".zone-b.backup.md"
 BACKUP_ROUTING=".routing-keywords.backup.json"

@@ -2,6 +2,8 @@
 
 Decided by: Codex CLI (gpt-5.4) | Date: 2026-05-09 | Sandbox: read-only
 
+> **Post-decision update:** Decision 2 below recommended `claude-fullstack-orchestrator` and that name was used initially. The repo was subsequently renamed to **`claude-fullstack`** to share naming symmetry with the sibling repo `claude-finance` (renamed from `claude-orchestrator`). The historical decision text is preserved as-is.
+
 User delegated 4 open decisions (including new backend scope expansion) to Codex's judgment.
 
 ## Decision 1: Backend Scope (Confidence: H)

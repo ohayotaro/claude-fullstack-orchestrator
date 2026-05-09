@@ -20,7 +20,7 @@ Install prerequisites first (see [Prerequisites](#prerequisites)). Then, in your
 
 ```bash
 cd /path/to/your-project
-git clone --depth 1 https://github.com/ohayotaro/claude-fullstack-orchestrator.git .starter \
+git clone --depth 1 https://github.com/ohayotaro/claude-fullstack.git .starter \
   && cp -r .starter/.claude .starter/.codex .starter/.gemini .starter/CLAUDE.md . \
   && rm -rf .starter
 claude
@@ -165,7 +165,7 @@ See `DESIGN.md` for the full architecture, routing policy, and rationale.
 Run `scripts/update.sh` from your project root. It backs up Zone B and your custom config, pulls the latest template, then restores the backups.
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/ohayotaro/claude-fullstack-orchestrator/main/scripts/update.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/ohayotaro/claude-fullstack/main/scripts/update.sh)
 ```
 
 Or, if you cloned the template into `.starter/` for inspection:
@@ -202,7 +202,7 @@ Or, if you cloned the template into `.starter/` for inspection:
 
 ## Provenance
 
-Modeled after the same author's [`claude-orchestrator`](https://github.com/ohayotaro/claude-orchestrator) (financial-trading specialization) with structural cues from [`DeL-TaiseiOzaki/claude-code-orchestra`](https://github.com/DeL-TaiseiOzaki/claude-code-orchestra) (multi-agent dev environment) and the multi-language rules layout from [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code). v0.3 design and decisions reviewed by Codex CLI (records in `DESIGN_REVIEW_codex_2026-05-09.md` and `DESIGN_DECISIONS_codex_2026-05-09.md`).
+Modeled after the same author's [`claude-finance`](https://github.com/ohayotaro/claude-finance) (financial-trading specialization) with structural cues from [`DeL-TaiseiOzaki/claude-code-orchestra`](https://github.com/DeL-TaiseiOzaki/claude-code-orchestra) (multi-agent dev environment) and the multi-language rules layout from [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code). v0.3 design and decisions reviewed by Codex CLI (records in `DESIGN_REVIEW_codex_2026-05-09.md` and `DESIGN_DECISIONS_codex_2026-05-09.md`).
 
 ## License
 
