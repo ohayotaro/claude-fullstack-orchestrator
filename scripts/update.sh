@@ -26,6 +26,11 @@
 #   - .claude/perf-thresholds.json (if customized)
 #   - .claude/visual-regression.json (if customized)
 #   - .claude/contract-watch.json (if customized)
+#   - .claude/settings.local.json (per-machine overrides)
+#   - .claude/projects/ (auto-memory store: user / project / feedback /
+#     reference memories)
+#   - .claude/checkpoints/, .claude/plans/, .claude/logs/, .claude/.cache/
+#     (session checkpoints, plans, logs, caches)
 #
 # What is overwritten:
 #   - CLAUDE.md Zone A (template orchestration policy)
@@ -47,6 +52,20 @@ BACKUP_ROUTING=".routing-keywords.backup.json"
 BACKUP_PERF=".perf-thresholds.backup.json"
 BACKUP_VISUAL=".visual-regression.backup.json"
 BACKUP_CONTRACT=".contract-watch.backup.json"
+BACKUP_STATE_DIR=".claude-state.backup"
+
+# Runtime state and user data preserved across updates.
+# Each entry is moved aside before the .claude/ wipe and moved back after,
+# so user memory and per-machine state survive even if the template no
+# longer ships these paths.
+STATE_ITEMS=(
+  "settings.local.json"
+  "projects"
+  "checkpoints"
+  "plans"
+  "logs"
+  ".cache"
+)
 
 red()    { printf "\033[31m%s\033[0m\n" "$*"; }
 green()  { printf "\033[32m%s\033[0m\n" "$*"; }
@@ -58,6 +77,20 @@ require_file() {
     exit 1
   fi
 }
+
+# If the script crashes between the backup and restore steps, runtime state
+# is sitting in $BACKUP_STATE_DIR/. Tell the user how to recover.
+on_error() {
+  if [[ -d "$BACKUP_STATE_DIR" ]] && [[ -n "$(ls -A "$BACKUP_STATE_DIR" 2>/dev/null)" ]]; then
+    red ""
+    red "update.sh failed mid-flight."
+    red "Your runtime state (memory, checkpoints, logs, etc.) is preserved in:"
+    red "  $BACKUP_STATE_DIR/"
+    red "To recover after fixing the issue:"
+    red "  cp -R $BACKUP_STATE_DIR/. .claude/ && rm -rf $BACKUP_STATE_DIR"
+  fi
+}
+trap on_error ERR
 
 # 1. Sanity check
 if [[ ! -d ".claude" ]]; then
@@ -93,7 +126,17 @@ yellow "Cloning latest template into $TMP_DIR/"
 rm -rf "$TMP_DIR"
 git clone --depth 1 "$REPO_URL" "$TMP_DIR"
 
-# 5. Overwrite the four targets
+# 5. Save runtime state before wiping .claude/
+yellow "Saving runtime state → $BACKUP_STATE_DIR/"
+rm -rf "$BACKUP_STATE_DIR"
+mkdir -p "$BACKUP_STATE_DIR"
+for item in "${STATE_ITEMS[@]}"; do
+  if [[ -e ".claude/$item" ]]; then
+    mv ".claude/$item" "$BACKUP_STATE_DIR/$item"
+  fi
+done
+
+# 6. Overwrite the four targets
 yellow "Overwriting .claude/, .codex/, .gemini/, CLAUDE.md"
 rm -rf .claude .codex .gemini CLAUDE.md
 cp -R "$TMP_DIR/.claude" .claude
@@ -101,7 +144,17 @@ cp -R "$TMP_DIR/.codex" .codex
 cp -R "$TMP_DIR/.gemini" .gemini
 cp "$TMP_DIR/CLAUDE.md" CLAUDE.md
 
-# 6. Restore Zone B
+# 7. Restore runtime state (user data wins over anything the new template ships)
+yellow "Restoring runtime state from $BACKUP_STATE_DIR/"
+for item in "${STATE_ITEMS[@]}"; do
+  if [[ -e "$BACKUP_STATE_DIR/$item" ]]; then
+    rm -rf ".claude/$item"
+    mv "$BACKUP_STATE_DIR/$item" ".claude/$item"
+  fi
+done
+rmdir "$BACKUP_STATE_DIR" 2>/dev/null || true
+
+# 8. Restore Zone B
 if [[ -s "$BACKUP_ZONE_B" ]]; then
   yellow "Restoring Zone B"
   python3 - "$BACKUP_ZONE_B" <<'PY'
@@ -127,7 +180,7 @@ claude_md.write_text(new)
 PY
 fi
 
-# 7. Restore customizable JSON
+# 9. Restore customizable JSON
 for pair in \
   "$BACKUP_ROUTING:.claude/routing-keywords.json" \
   "$BACKUP_PERF:.claude/perf-thresholds.json" \
@@ -141,12 +194,13 @@ for pair in \
   fi
 done
 
-# 8. Make hooks executable
+# 10. Make hooks executable
 chmod +x .claude/hooks/*.py 2>/dev/null || true
 
-# 9. Cleanup
+# 11. Cleanup
 rm -rf "$TMP_DIR"
 rm -f "$BACKUP_ZONE_B"
+rm -rf "$BACKUP_STATE_DIR" 2>/dev/null || true
 
 green "Update complete."
 yellow "Next steps:"
