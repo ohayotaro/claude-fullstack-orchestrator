@@ -29,7 +29,6 @@ Run `/a11y-audit` to execute axe-core (web), Lighthouse, iOS Accessibility Inspe
 - Keyboard-only flow verified for primary paths
 - Screen reader paths verified for primary paths
 
-## Hand-off
+## Ownership
 
-- Audit and remediation: `a11y-auditor`
-- Primitive a11y semantics: `design-system-engineer`
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

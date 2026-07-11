@@ -1,54 +1,42 @@
-# Rule: Codex Delegation
+# Codex Delegation Rules
 
-Codex CLI (gpt-5.4) is the deep-reasoning external agent. Use deliberately, not by default.
+Codex is the technical lead for repository exploration, design, implementation, debugging, tests, and independent review. Claude owns the task brief, risk tier, approval gates, and final acceptance.
 
-## When to delegate to Codex
+## Canonical Contract
 
-- Architecture decisions (frontend, backend, mobile, infra)
-- API / event / DB schema contract design
-- Authn/authz flow design
-- Performance-optimization strategy (after measurement)
-- Algorithm design
-- Debugging when Opus subagents cannot localize the cause
-- Code review for high-blast-radius changes (contracts, auth, migrations)
-- Backend incident triage (`/incident-backend`)
+Use `.claude/docs/CODEX_TASK_CONTRACT.md` for the task schema, risk tiers, phase outputs, and runner usage. Do not duplicate large prompts in skills or hooks.
 
-## When NOT to delegate to Codex
+## Workflow
 
-- Tasks fully solvable with codebase exploration → `general-purpose` Opus subagent
-- Multimodal input (images, PDFs, video) → Gemini
-- High-throughput parallel mechanical work → Opus subagents in parallel
+1. Claude creates `.claude/tasks/<task-id>/brief.md` with objective, scope, non-goals, acceptance criteria, risk tier, required validation, forbidden actions, and blockers.
+2. T1 may run one implementation phase directly when the brief justifies low localized risk.
+3. T2 and T3 require `plan.md`, Claude `approval.md`, implementation, independent review, then Claude acceptance.
+4. T3 additionally requires explicit user approval before implementation or any external action.
 
-## Invocation patterns
+## Runner
 
-- **Foreground** (`codex exec ... < /dev/null`): when the orchestrator must wait for the result before proceeding (design review, statistical validation, contract decisions)
-- **Background** (long-running research): only when the orchestrator has independent work to do in parallel; otherwise foreground is simpler
-- **Always pipe `< /dev/null`** when invoking from a non-interactive context to avoid stdin-wait hangs
-- Use `--skip-git-repo-check` when the working directory is not a git repo
-
-## Approval policy
-
-`.codex/config.toml` sets `approval_policy = "never"` for non-interactive flows. Codex operates in a read-only sandbox by default. Code changes proposed by Codex are applied via `codex apply` (or by the orchestrator via Edit/Write).
-
-## Expected output format from Codex
-
-Prefer this structure in delegation prompts:
-
-```
-TL;DR (max 3 lines)
-Analysis (numbered)
-Plan (numbered, actionable, with file/section pointers)
-Code (only when implementation is in scope)
-Validation (how to verify)
-Risks
-Confidence: H/M/L per major recommendation
+```bash
+python3 .claude/scripts/codex_handoff.py plan <task-id>
+python3 .claude/scripts/codex_handoff.py implement <task-id>
+python3 .claude/scripts/codex_handoff.py review <task-id>
+python3 .claude/scripts/codex_handoff.py status <task-id>
+python3 .claude/scripts/codex_handoff.py collect <task-id>
+python3 .claude/scripts/codex_handoff.py cancel <task-id>
 ```
 
-## Persisted artifacts
+The runner passes prompts through stdin, uses strict config, isolates phases with ephemeral invocations, uses read-only sandboxing for plan/review, uses workspace-write for implementation, writes `plan.md`, the `implementation-result` Markdown artifact, `review.md`, `state.json`, and an append-only `codex-events.jsonl`, and fails closed on missing prerequisites, empty output, Codex failure, task path traversal, or declared network requirements.
 
-Save Codex reviews and decisions as files under repo root or `.claude/docs/reviews/` (e.g., `DESIGN_REVIEW_codex_<date>.md`). They are commit-worthy and serve as decision records.
+Phase commands accept `--model` and `--effort`. CLI values override phase env vars (`CODEX_PLAN_MODEL`, `CODEX_PLAN_EFFORT`, `CODEX_IMPLEMENT_MODEL`, `CODEX_IMPLEMENT_EFFORT`, `CODEX_REVIEW_MODEL`, `CODEX_REVIEW_EFFORT`), which override general env vars (`CODEX_MODEL`, `CODEX_EFFORT`). If no model is set, the runner omits the model flag. If no effort is set, the runner applies the default effort matrix from the task risk tier and records the source in `state.json` and `codex-events.jsonl`.
 
-## Hand-off
+Run `implement` and `review` through Claude Code background Bash execution when long-running work should continue asynchronously. The runner itself does not daemonize, detach, kill processes, or manage background PIDs. `status` and `collect` are read-only; `cancel` only marks `state.json` as cancelled.
 
-- Skill that wraps Codex: `/codex-system`, `/codex-debugger`, `/incident-backend`
-- Hooks that escalate to Codex: `check-codex-on-contract-edit.py`, `error-to-codex.py`
+## Failure Handling
+
+If Codex fails, do not silently continue. Report:
+
+- Phase and task ID
+- Exit status or runner error
+- Missing prerequisite or validation gap
+- Whether the task is `BLOCKED`, needs a revised brief, or needs explicit user approval
+
+Acceptance criteria may not be relaxed without updating the brief and getting PM approval.

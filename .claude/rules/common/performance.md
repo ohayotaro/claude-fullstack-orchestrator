@@ -2,7 +2,7 @@
 
 Measurement-first. Every recommendation cites a profile, trace, or benchmark.
 
-## Default thresholds (override in Zone B `perf-thresholds.json`)
+## Default thresholds (override in Zone B)
 
 ### Web
 - LCP <2.5s, INP <200ms, CLS <0.1
@@ -37,8 +37,6 @@ Measurement-first. Every recommendation cites a profile, trace, or benchmark.
 - RN: Hermes profiles, Flipper, FlatList virtualization checks
 - Backend: language-specific profilers, DB EXPLAIN, APM traces
 
-## Hand-off
+## Ownership
 
-- Measurement and code-level fixes: `perf-optimizer`
-- Schema-level fixes: `data-engineer`
-- Infra-level fixes (autoscale, cache layer): `infra-engineer`
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

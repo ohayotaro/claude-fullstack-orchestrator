@@ -6,7 +6,7 @@ Applies to all persistent storage — relational DBs, document stores, key-value
 
 - **Append-only**: never edit a committed migration; add a new one
 - **Reversible where reasonable**: `down` documented
-- **Destructive changes** (DROP / data deletion / NOT NULL on existing): require Codex review (severity: warn) and a backout plan. The `migration-check.py` hook enforces this.
+- **Destructive changes** (DROP / data deletion / NOT NULL on existing): T3-gated — explicit user approval and a documented backout plan in the task brief.
 - **Long migrations on hot tables**: planned for online execution — split into batches, use shadow tables, or use the DB engine's online DDL where supported
 
 ## Schema design
@@ -22,7 +22,7 @@ Applies to all persistent storage — relational DBs, document stores, key-value
 
 - Retention period declared for each table holding user data
 - Archival / TTL strategy documented when applicable
-- Backup / restore procedure documented and drilled (with `infra-engineer`)
+- Backup / restore procedure documented and drilled
 
 ## Sensitive columns
 
@@ -38,8 +38,6 @@ Applies to all persistent storage — relational DBs, document stores, key-value
 - **DynamoDB**: access pattern first; single-table design considered, GSIs intentional
 - **MongoDB**: schema validation enabled (`$jsonSchema`); indexes as code
 
-## Hand-off
+## Ownership
 
-- Schema and migration design: `data-engineer`
-- Query / N+1 review: `data-engineer` + `perf-optimizer`
-- Connection pool / DB infra: `infra-engineer`
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

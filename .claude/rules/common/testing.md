@@ -25,8 +25,8 @@
 ## Visual regression
 
 - Baselines stored with traceability (git LFS / object storage / committed in repo per project)
-- New baselines reviewed (Gemini-driven via `/visual-verify`)
-- Diff verdicts: pass / review / fail; `review` requires human approval
+- New baselines reviewed by PM visual acceptance (`/visual-verify`)
+- Diff verdicts: pass / review / fail; `review` requires user approval
 
 ## Test tooling per stack (read Zone B `testing.*`)
 
@@ -38,8 +38,6 @@
 - Flutter: flutter_test, integration_test
 - Cross-platform e2e: Detox (RN), Playwright (web)
 
-## Hand-off
+## Ownership
 
-- Test authoring and triage: `qa-engineer`
-- Visual diff judgment: `visual-analyst` (Gemini)
-- Test failure root cause: `/codex-debugger` if non-trivial
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

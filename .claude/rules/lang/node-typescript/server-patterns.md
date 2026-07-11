@@ -53,7 +53,7 @@ Applies to Hono / Fastify / NestJS / Express / serverless handlers. Read Zone B 
 
 ## Background work
 
-- HTTP handlers do not perform long async work — enqueue to a job (per `common/data-modeling.md` and the `job-engineer` patterns)
+- HTTP handlers do not perform long async work — enqueue to a job (per `common/data-modeling.md` and the `/job-design` intake)
 - Fire-and-forget is forbidden; use a queue with at-least-once delivery
 
 ## Graceful shutdown

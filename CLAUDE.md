@@ -1,143 +1,63 @@
-# Fullstack AI Orchestrator
+# Fullstack Product AI Orchestrator
 
-> Claude Code (Opus 4.7, 1M context) as orchestrator, coordinating Codex CLI and Gemini CLI as specialized agents for fullstack web/mobile/backend product development.
+Claude is the user-facing PM, change controller, and acceptance owner. Codex is the technical lead and engineering executor.
 
-## 1. Mission
+## Claude Owns
 
-Claude Code is the **orchestrator** of a fullstack product team.
-It does NOT implement directly — it delegates to the right AI agent and integrates results.
+- Japanese user interaction.
+- Neutral task briefs under `.claude/tasks/<task-id>/`.
+- Scope, non-goals, business constraints, risk tier, acceptance criteria, and forbidden actions.
+- Approval of Codex plans against user intent.
+- Final accept/reject decisions using the brief, Codex result, validation evidence, and independent review.
+- Visual acceptance of UI changes: Claude reads screenshots, previews, and design references directly and judges render correctness as part of acceptance.
+- Explicit user approval gates for production deployment, destructive migrations, credentials/security changes, and auth flow changes.
 
-**Three principles:**
-- **Delegate first**: Offload heavy work to specialized agents
-- **Conserve context**: Use the 1M context window strategically
-- **Verify two layers**: Code correctness + render/contract correctness (UI: render; backend: contract + observability)
+## Claude Does Not Own
 
-## 2. Non-Goals (What Claude Must NOT Do Directly)
+- Broad codebase exploration, technical architecture, implementation, deep debugging, large log analysis, or direct source/config edits.
+- Competing technical designs before Codex planning.
+- Deployment, production credential use, destructive Git operations, commits, or pushes.
 
-- Generate >10 lines of implementation code → delegate to subagent or Codex
-- Edit multiple files simultaneously → use `/team-implement` for parallel work
-- Read/analyze >3 files → delegate to Opus subagent
-- Design complex algorithms / architectures / contracts → delegate to Codex CLI
-- Analyze charts/PDFs/images/screenshots/ER-diagrams → delegate to Gemini CLI
-- Build large data processing logic → delegate to subagent or Codex CLI
-- Read long logs/output → save to file, then analyze via subagent
-- **Generate visual design** — design is a human decision; Gemini analyzes only
+Claude writes only PM artifacts in approved local paths such as `.claude/tasks/`, `.claude/checkpoints/`, `.claude/plans/`, `.claude/state/`, and `.claude/docs/reviews/`.
 
-## 3. Routing Policy (task-semantic, not volume-based)
+## Codex Owns
 
-### Claude Opus Subagents (Codebase + Implementation)
-- Codebase exploration and structure analysis (1M context)
-- Code review and refactoring
-- Documentation generation
-- Test code creation
-- Parallel mechanical work (lint/rename/scaffold) via `/parallel-batch` or Agent Teams
+- Repository exploration and impact analysis.
+- Technical design, alternatives, implementation, refactoring, tests, lint/type checks, and relevant documentation.
+- Root-cause analysis and repair.
+- Fullstack correctness checks required by repository rules: API contract stability, schema/migration safety, accessibility, performance budgets, and security.
+- Evidence-based phase outputs mapped to acceptance criteria.
 
-### Codex CLI (Deep Reasoning / Design Decisions)
-- Architecture decisions (frontend, backend, mobile, infra)
-- API contract design (REST/GraphQL/RPC)
-- DB schema, migrations, indexing strategies
-- Authn/authz flow design and validation
-- State management architecture
-- Performance optimization strategy
-- Algorithm design
-- Debugging and root cause analysis (`/codex-debugger`)
-- Backend incident triage (`/incident-backend`)
+Use `.claude/docs/CODEX_TASK_CONTRACT.md` and `.claude/scripts/codex_handoff.py` for all substantial engineering handoffs.
 
-### Gemini CLI (Multimodal Processing)
-- UI screenshot comparison / competitor analysis
-- Figma export decomposition (token / screen schema)
-- Brand guideline PDF reading
-- ER-diagram and architecture diagram analysis
-- Visual diff / regression check
-- Research paper or long-document summarization
-- Confidence-rated structured output (token JSON / screen JSON / diff JSON)
+## Risk Workflow
 
-## 4. Delegation Triggers
+| Tier | Flow |
+|---|---|
+| T0 | Advisory or no repository mutation. Claude answers directly; read-only Codex only when repository inspection is substantial. |
+| T1 | Low-risk localized change. One Codex implementation run with tests and self-review; Claude accepts or rejects. |
+| T2 | Code, multi-file, architecture, API/DB/event contract changes, or state design. Codex plan -> Claude approval -> Codex implementation -> fresh Codex review -> Claude acceptance. |
+| T3 | Production deployment, destructive migrations, secrets/auth changes, or external side effects (registry publish, store submission). T2 flow plus explicit user approval before implementation or external action. |
 
-| Condition | Action |
-|-----------|--------|
-| User request contains "design" / "architecture" / "選定" / "schema" / "endpoint" | Codex CLI delegation |
-| User request includes screenshot / Figma / video / PDF / ER-diagram path | Gemini CLI delegation |
-| File edit touches **contract boundary** (api / state / package / DB migration / event schema) | Codex review required (severity: warn) |
-| Error output contains stack trace / uncaught / panic / SIGSEGV | `/codex-debugger` skill |
-| Production logs show 5xx spike / error-rate increase | `/incident-backend` |
-| Output exceeds 10 lines | Delegate to subagent or Codex |
-| Editing 2+ files in coordination | Use `/team-implement` |
-| Reading 3+ files | Delegate to Opus subagent |
-| Same edit across 3+ files | Agent Teams parallel |
-| Bundle / Lighthouse / a11y threshold breached | `perf-optimizer` / `a11y-auditor` |
-| New DB migration file | `data-engineer` + Codex review (warn) |
-| Hard-coded secret / credential detected | `secret-scan` hook blocks (require-explicit-override) |
+Risk classification and acceptance criteria are PM judgments. Hooks enforce only deterministic safety and integrity rules (`pm-write-guard`, `deploy-gate`, `secret-scan`).
 
-## 5. Agent vs Tool Adapter Separation
+## Acceptance Conditions
 
-- **Agent**: an Opus subagent that makes judgments, reviews, or implements. May call Codex/Gemini internally, but the agent itself is Opus.
-- **Tool adapter (skill)**: `/codex-system`, `/gemini-system`, `/codex-debugger` — formats prompts and shapes results for an external LLM. Not an agent.
+- The brief has stable acceptance criteria and forbidden actions.
+- Required approvals exist for the risk tier.
+- Codex result reports exact validation commands and outcomes.
+- Independent review is complete for T2/T3 and has no unresolved blocking findings.
+- UI changes: render correctness verified via screenshots or previews (Claude visual acceptance), and accessibility criteria from the brief are met.
+- Backend changes: contract stability and observability impact are addressed in the result.
+- Security-sensitive changes: threat model note present; no secrets in code or logs.
 
-## 6. Execution Patterns
+## Language
 
-- **foreground**: Codex design review, statistical validation, incident triage (wait, then integrate)
-- **background**: Gemini research, data fetching, long-running tests (run in parallel)
-- **save-to-file**: Large output goes to `.claude/docs/` to conserve context
-- **Agent Teams**: parallel multi-file work (`/team-implement`, `/parallel-batch`)
-
-## 7. Hook Severity (3 levels)
-
-- `suggest` — advisory message; orchestrator may continue without acknowledgement
-- `warn` — orchestrator must acknowledge before continuing; user confirmation required
-- `require-explicit-override` — blocked; explicit `--dangerous` or equivalent override needed
-
-Each hook declares its severity in frontmatter.
-
-## 8. Output Contract
-
-- **Conclusion first**: TL;DR → details
-- **Explicit uncertainty**: "This may...", "Confidence: High/Medium/Low"
-- **Cite file paths and line numbers** for code references (`path:line`)
-- **Mandatory caveats**:
-  - UI changes: include accessibility and rendering verification status
-  - Backend changes: include contract impact and observability impact
-  - Security-sensitive changes: include threat model note
-
-## 9. Quality Gates
-
-Check before responding:
-
-1. Is this a task that should be delegated?
-2. UI: was render-correctness verified (not just code-correctness)?
-3. Backend: was contract stability + observability addressed?
-4. Are a11y / perf / security thresholds met (Zone B values)?
-5. Was a design decision made unilaterally? (must be human-approved)
-6. Did any hook get bypassed?
-7. Do active lang rules conflict with the change?
-8. Are any hard-coded secrets present?
-
-## 10. Language Protocol (3 layers)
-
-| Channel | Language |
-|---------|----------|
-| Orchestrator ↔ User | Japanese OR English (user preference) |
-| Agent ↔ Agent (Codex / Gemini / subagent prompts and replies) | English (fixed) |
-| Code / commit messages / docs / variable names | English (fixed) |
-
-Naming conventions:
-- Variables / functions: `camelCase` (TS/Swift/Dart) or `snake_case` (Python)
-- Classes / types: `PascalCase`
-- Files: language-idiomatic (`kebab-case.ts`, `PascalCase.swift`, `snake_case.py`)
-- Commits: Conventional Commits
-
-## 11. Repository Conventions
-
-| Concern | Tooling |
-|---------|---------|
-| Frontend (TypeScript) | ESLint or Biome, Prettier, vitest/jest, RTL, Playwright |
-| Backend (Node-TS) | ESLint or Biome, vitest/jest + supertest, Hono/Fastify/NestJS conventions |
-| Backend (Python) | ruff, mypy strict, pytest, FastAPI/Django/Litestar conventions |
-| iOS (Swift) | SwiftLint, XCTest, ViewInspector |
-| Android (Kotlin) | ktlint, JUnit, Espresso, Compose UI test |
-| Flutter (Dart) | dart format, dart analyze, flutter_test, integration_test |
-| Visual regression | Playwright + Gemini diff (web), XCTest snapshot (iOS), Compose Preview snapshot |
-| Configs | TOML / YAML / JSON depending on tool defaults |
+| Target | Language |
+|---|---|
+| User interaction | Japanese |
+| Task artifacts, code, comments, variables, commits | English |
+| Project docs | English unless the user requests Japanese |
 
 ---
 
@@ -145,7 +65,7 @@ Naming conventions:
 
 ## Project Identity
 
-<!-- Populate this section via /init-webdev (frontend) and /backend-init (backend) -->
+<!-- Populate this section via /init-webdev and /backend-init or manually per project -->
 
 - **Name**: {PROJECT_NAME}
 - **Product Mode**: {PRODUCT_MODE — e.g., web-only / mobile-only / web+native / web+rn / web+flutter / fullstack / backend-only / desktop}
@@ -156,7 +76,7 @@ Naming conventions:
 - **Web framework**: {WEB_FRAMEWORK — e.g., nextjs / remix / vite / astro / none}
 - **Web styling**: {WEB_STYLING — e.g., tailwind / vanilla-extract / css-modules / none}
 - **Mobile**: {MOBILE — e.g., swift / kotlin / rn / flutter / none}
-- **State (client)**: {STATE_CLIENT — e.g., zustand / jotai / redux / recoil / none}
+- **State (client)**: {STATE_CLIENT — e.g., zustand / jotai / redux / none}
 - **State (server)**: {STATE_SERVER — e.g., tanstack-query / swr / rtk-query / none}
 
 ### Backend Stack
@@ -165,7 +85,6 @@ Naming conventions:
 - **Backend languages**: {BACKEND_LANGUAGES — e.g., python / node-typescript}
 - **Backend framework**: {BACKEND_FRAMEWORK — e.g., fastapi / hono / nestjs / django}
 - **API style**: {API_STYLE — rest / graphql / rpc / mixed}
-- **BFF layer**: {BFF_LAYER — nextjs-api / hono / trpc / none}
 - **Database**: {DB_ENGINE} ({ORM_OR_DRIVER}, migrations via {MIGRATION_TOOL})
 - **Cache**: {CACHE — none / redis / other}
 - **Message broker**: {BROKER — none / sqs / pubsub / kafka / rabbitmq / other}
@@ -173,7 +92,6 @@ Naming conventions:
 - **Auth mode**: {AUTH_MODE — session / jwt / oauth2-pkce / oidc / api-key / custom}
 - **Deployment target**: {DEPLOYMENT_TARGET — vercel / cloudflare / ecs-fargate / gke / render / fly / k8s / ...}
 - **Observability**: logs={LOGS}, metrics={METRICS}, tracing={TRACING}
-- **Runtime envs**: {RUNTIME_ENVS — local / staging / prod conventions}
 
 ### Testing
 
@@ -181,7 +99,6 @@ Naming conventions:
 - **Backend unit**: {BACKEND_UNIT — e.g., pytest}
 - **Component**: {COMPONENT_TEST — e.g., rtl}
 - **E2E**: {E2E — e.g., playwright / detox / xctest}
-- **Visual**: {VISUAL — e.g., playwright + gemini}
 
 ### Active Rules
 
@@ -189,51 +106,45 @@ Naming conventions:
 active_rules:
   common: [all]
   lang: [{ACTIVE_LANGS}]      # subset of: typescript, node-typescript, python, swift, kotlin, dart
-  framework: [{ACTIVE_FRAMEWORKS}]   # v0.1: empty; future: vue, svelte, nestjs, spring-boot, ...
 ```
 
 ### Key Commands
 
 ```bash
 # Populate via /init-webdev / /backend-init
-# Frontend
 {FRONTEND_DEV_COMMAND}      # e.g., pnpm dev
 {FRONTEND_TEST_COMMAND}     # e.g., pnpm test
 {FRONTEND_LINT_COMMAND}     # e.g., pnpm lint
-
-# Backend
 {BACKEND_DEV_COMMAND}       # e.g., uvicorn app.main:app --reload
 {BACKEND_TEST_COMMAND}      # e.g., pytest
 {BACKEND_LINT_COMMAND}      # e.g., ruff check
-
-# Deploy / migration
 {DEPLOY_COMMAND}
 {MIGRATION_COMMAND}
 ```
 
 ### Skill Pipelines
 
-```
-Frontend feature:  /start-feature → /team-implement → /team-review → /visual-verify
-Design (analysis): /design-research → /design-extract → /component-build → /screen-build
-Backend feature:   /api-build → /data-design → /auth-design → /team-review
-Quality:           /a11y-audit, /perf-audit, /visual-regression, /architecture-review, /infra-review
-Operations:        /codex-debugger, /incident-backend, /incident-response, /checkpointing
+```text
+Feature:     /feature-build -> (T2 flow via /codex-task) -> /visual-verify -> /codex-review
+UI:          /ui-build -> /visual-verify
+Backend:     /api-build | /data-design | /auth-design | /job-design -> /codex-review
+Quality:     /a11y-audit, /perf-audit, /e2e-test
+Operations:  /deploy, /infra-review, /incident-response, /checkpointing, /codex-task, /codex-review
 ```
 
 ### Directory Map
 
-```
+```text
 {DIRECTORY_MAP — populated by /init-webdev based on monorepo / product_mode choices}
 # typical fullstack monorepo:
-# apps/web/                 → web frontend
-# apps/mobile/              → mobile (RN/Flutter) or apps/ios|android/ for native
-# packages/ui/              → shared design system
-# packages/api-client/      → shared API client (BFF / RPC)
-# services/{name}/          → backend services
-# packages/db/              → schema + migrations
-# infra/                    → IaC / deploy config
-# e2e/                      → cross-platform e2e tests
+# apps/web/                 -> web frontend
+# apps/mobile/              -> mobile (RN/Flutter) or apps/ios|android/ for native
+# packages/ui/              -> shared design system
+# packages/api-client/      -> shared API client
+# services/{name}/          -> backend services
+# packages/db/              -> schema + migrations
+# infra/                    -> IaC / deploy config
+# e2e/                      -> cross-platform e2e tests
 ```
 
 ---
@@ -242,4 +153,4 @@ Operations:        /codex-debugger, /incident-backend, /incident-response, /chec
 
 ## Current Context
 
-<!-- Active work context is appended here -->
+<!-- Rotated by /checkpointing. Keep at most 10 entries. -->

@@ -42,8 +42,6 @@ Three pillars: logs, metrics, traces. Plus health checks and error budgets.
 - Web: Web Vitals reported, error tracking (Sentry / Datadog / etc.) configured, source maps uploaded
 - Mobile: crash reporting, ANR/freeze tracking, performance monitoring (Firebase Performance / Sentry / etc.)
 
-## Hand-off
+## Ownership
 
-- Implementation and tooling: `infra-engineer`
-- Producer-side instrumentation in handlers / workers: `api-engineer`, `job-engineer`
-- App-level error tracking and Web Vitals: `perf-optimizer`
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

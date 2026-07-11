@@ -3,6 +3,12 @@
 .claude/logs/
 .claude/.cache/
 
+# PM orchestration artifacts (per-session, no secrets)
+.claude/tasks/
+.claude/checkpoints/
+.claude/plans/
+.claude/state/
+
 # OS / editor
 .DS_Store
 .vscode/

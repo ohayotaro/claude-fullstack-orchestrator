@@ -13,7 +13,7 @@ Applies to FastAPI / Litestar / Django / Flask. Read Zone B `backend_framework`.
 
 - ASGI: uvicorn (default), hypercorn, gunicorn with uvicorn workers (production)
 - WSGI: gunicorn for Django / Flask sync stacks
-- Workers count tied to deployment (`infra-engineer`); document in Zone B
+- Workers count tied to the deployment target; document in Zone B
 
 ## Dependency injection
 

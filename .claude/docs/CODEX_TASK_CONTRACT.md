@@ -1,0 +1,167 @@
+# Codex Task Contract
+
+This repository uses a two-provider workflow:
+
+- Claude is the Japanese-speaking PM, change controller, approval gate, and acceptance owner.
+- Codex is the technical lead, codebase explorer, architect, implementer, test executor, and independent reviewer.
+
+Claude creates neutral task artifacts under `.claude/tasks/<task-id>/`. Codex receives those artifacts through `.claude/scripts/codex_handoff.py`.
+
+## Risk Tiers
+
+| Tier | Workflow |
+|---|---|
+| T0 | Advisory or no repository mutation. Claude answers directly; read-only Codex is used only when repository inspection is substantial. |
+| T1 | Low-risk localized change. One Codex implementation run with tests and self-review; Claude performs acceptance. |
+| T2 | Code, multi-file, architecture, API/DB/event contract changes, or state design. Fresh read-only Codex plan, Claude approval, fresh Codex implementation, fresh read-only Codex review, then Claude acceptance. |
+| T3 | Production deployment, destructive migrations, secrets/auth changes, or external side effects (registry publish, store submission). T2 flow plus explicit user approval before implementation or external action. |
+
+Risk classification is a PM judgment. Hooks enforce only deterministic safety and integrity rules.
+
+## Task Directory
+
+Create `.claude/tasks/<task-id>/brief.md`. The directory is gitignored and must contain no secrets.
+
+### Brief Schema
+
+```markdown
+# <task-id>: <title>
+
+## Objective
+<User outcome.>
+
+## Scope
+<Included work.>
+
+## Non-Goals
+<Explicitly excluded work.>
+
+## Acceptance Criteria
+- AC1: <Stable, testable criterion.>
+- AC2: <Stable, testable criterion.>
+
+## Constraints And Context
+<Business constraints and relevant repository context (stack from Zone B, affected surfaces).>
+
+## Risk Tier
+T<n> - <rationale>
+
+## Required Validation
+<Commands, audits, screenshots, or manual checks required.>
+
+## Forbidden Actions
+<Actions Codex must not take.>
+
+## Open Decisions Or Blockers
+<Unknowns requiring PM or user decision.>
+```
+
+If network access is required, state `Network access: required`. The runner fails closed because network is not enabled by default.
+
+For UI-affecting tasks, Required Validation should include screenshot or preview capture (e.g., Playwright screenshots, Storybook, simulator captures) saved to a path listed in the brief. Claude performs visual acceptance by reading those images directly.
+
+## Plan Output
+
+Codex plan output is saved as `plan.md` and must include:
+
+- Recommended design and rationale
+- Alternatives considered
+- Impacted files and components
+- Implementation sequence
+- Test and validation plan
+- Risks and blockers
+- Mapping to every acceptance criterion
+
+For T2 and T3, Claude must approve the plan by writing `approval.md` before implementation.
+
+## Implementation Output
+
+Codex implementation output is saved as the Markdown artifact with stem `implementation-result` and must include:
+
+- Status: `PASS`, `PARTIAL`, or `BLOCKED`
+- Summary
+- Files changed
+- Material design decisions
+- Exact validation commands and results
+- Acceptance-criteria mapping
+- Residual risks, debt, or blockers
+
+## Review Output
+
+Codex review output is saved as `review.md` and must include:
+
+- Verdict: `APPROVE` or `CHANGES_REQUIRED`
+- Findings by severity with file and line references where applicable
+- Acceptance-criteria gaps
+- Validation gaps
+- Residual contract, security, accessibility, performance, operational, and regression risks
+
+The reviewer must be a fresh Codex invocation and must not receive the implementation transcript. It may read only the brief, approved plan, implementation result, repository, and diff.
+
+## Runner
+
+Use:
+
+```bash
+python3 .claude/scripts/codex_handoff.py plan <task-id>
+python3 .claude/scripts/codex_handoff.py implement <task-id>
+python3 .claude/scripts/codex_handoff.py review <task-id>
+python3 .claude/scripts/codex_handoff.py status <task-id>
+python3 .claude/scripts/codex_handoff.py collect <task-id>
+python3 .claude/scripts/codex_handoff.py cancel <task-id>
+```
+
+The runner centralizes Codex flags, uses stdin prompts, strict config, phase-specific sandboxing, non-interactive approval policy, ephemeral invocations, append-only event logs, output files, state tracking, and Git metadata. It never enables network access by default and never uses deprecated automation or sandbox-bypass flags.
+
+### Model And Effort
+
+Phase commands may select a Codex model and reasoning effort without changing prompt content or phase contracts.
+
+Model precedence, highest to lowest:
+
+1. CLI: `--model`
+2. Phase env: `CODEX_PLAN_MODEL`, `CODEX_IMPLEMENT_MODEL`, `CODEX_REVIEW_MODEL`
+3. General env: `CODEX_MODEL`
+4. Optional T0 read-only env: `CODEX_FAST_MODEL`
+5. Omitted model flag, allowing the Codex CLI configured default
+
+Effort precedence, highest to lowest:
+
+1. CLI: `--effort`
+2. Phase env: `CODEX_PLAN_EFFORT`, `CODEX_IMPLEMENT_EFFORT`, `CODEX_REVIEW_EFFORT`
+3. General env: `CODEX_EFFORT`
+4. Default matrix from the brief risk tier
+
+Valid effort values are `minimal`, `low`, `medium`, `high`, and `xhigh`. The runner passes effort with a Codex config override and rejects unknown values before invoking Codex.
+
+| Risk tier | Default effort |
+|---|---|
+| T0 | `medium` |
+| T1 | `medium` |
+| T2 | `high` |
+| T3 | `xhigh` |
+
+T3 tasks fail closed unless the resolved effort is `xhigh`. A lower phase or general env effort is rejected. A lower CLI effort is treated as a deliberate operator override.
+
+`state.json` and phase start markers in `codex-events.jsonl` record `requested_model`, `resolved_model`, `requested_effort`, `resolved_effort`, and `selection_source`.
+
+### Background Execution
+
+`plan` runs in the foreground because Claude must inspect and approve the plan before implementation. `implement` and `review` are normal foreground OS processes designed to be launched through Claude Code's native background Bash execution. The runner does not use `nohup`, shell `&`, daemonization, PID supervision, or process signaling. Claude Code owns background task lifecycle management.
+
+`cancel` only writes `status: cancelled` to `state.json`; it does not kill a running Codex process.
+
+### Task Artifacts
+
+Each task directory may contain:
+
+- `brief.md` - PM-authored task brief.
+- `plan.md` - Codex plan output.
+- `approval.md` - Claude approval required before T2/T3 implementation.
+- `implementation-result` + `.md` - Codex implementation output.
+- `review.md` - fresh Codex review output.
+- `state.json` - current or last phase state: task ID, phase, status, timestamps, PID, exit code, Git before/after, and result path.
+- `codex-events.jsonl` - consolidated append-only operational event log with phase markers.
+- `codex-<phase>.stderr.txt` - stderr capture when a phase writes non-empty stderr.
+
+`status` prints `state.json` without modifying files. `collect` prints the current or last phase result artifact referenced by `state.json` without modifying files.

@@ -28,8 +28,6 @@ Default to the **least powerful tool** that solves the problem.
 - One source per piece of state — no duplication between server cache and global store
 - Optimistic updates: only when reconciliation strategy is documented
 
-## Hand-off
+## Ownership
 
-- Strategy choice and architecture: `state-architect`
-- Wiring per chosen strategy: `ui-engineer`
-- Server-side cache + invalidation rules: `api-engineer` if endpoint-level
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

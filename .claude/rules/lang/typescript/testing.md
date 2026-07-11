@@ -7,7 +7,7 @@ Applies to React, Next, Vite, Remix UIs.
 - **Unit / component**: vitest (preferred for Vite/Next 14+) or jest (jest required for some frameworks)
 - **Component**: React Testing Library (RTL) + `@testing-library/user-event` (over fireEvent)
 - **E2E**: Playwright (preferred) or Cypress
-- **Visual regression**: Playwright screenshots + Gemini diff via `/visual-verify`
+- **Visual regression**: Playwright screenshots judged by PM visual acceptance via `/visual-verify`
 
 ## Component testing principles
 

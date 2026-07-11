@@ -6,25 +6,24 @@ Each document has a single source-of-truth role and explicit update triggers. Dr
 
 | Document | Source of truth for | Update trigger |
 |---|---|---|
-| `CLAUDE.md` Zone A | orchestration policy | template version bump only |
+| `CLAUDE.md` Zone A | PM/engineering orchestration policy | template version bump only |
 | `CLAUDE.md` Zone B | project stack and active rules | `/init-webdev`, `/backend-init`, manual edit when stack changes |
 | `CLAUDE.md` Zone C | active work context | session changes, `/checkpointing` rotation |
-| `DESIGN.md` | template architectural decisions | when policy changes (route, agent, skill) |
+| `AGENTS.md` | Codex engineering contract | when delegation policy or correctness rules change |
+| `.claude/docs/CODEX_TASK_CONTRACT.md` | task schema, risk tiers, runner usage | when the handoff protocol changes |
+| `DESIGN.md` | template architectural decisions (ADRs) | when policy changes |
 | `README.md` | how to install / use the template | when distribution flow or prerequisites change |
-| `.claude/docs/CODEX_HANDOFF_PLAYBOOK.md` | Codex prompt templates | when delegation patterns change |
-| `.claude/docs/GEMINI_HANDOFF_PLAYBOOK.md` | Gemini prompt templates | when output schemas change |
-| `design/decisions/*.md` (project) | architectural decision records | per significant decision |
-| `api_specs/` (project) | external API integration docs | when integrating or upgrading external API |
+| `.claude/docs/reviews/*.md` | commit-worthy review and incident records | per accepted T2/T3 task or incident |
+| `.claude/tasks/<id>/` (gitignored) | per-task working artifacts | per task |
 
-## Drift detection (run during `/checkpointing` Step N)
+## Drift detection (run during `/checkpointing`)
 
 Trigger an alert if any of the following:
 
-1. Zone C exceeds N entries (default 10) — needs rotation/archive
+1. Zone C exceeds 10 entries — needs rotation/archive
 2. `DESIGN.md` references file paths or commands that no longer exist
-3. `api_specs/` mentions endpoints absent from current code
-4. A skill referenced in CLAUDE.md is missing under `.claude/skills/`
-5. `routing-keywords.json` references an agent name no longer in `.claude/agents/`
+3. A skill referenced in CLAUDE.md is missing under `.claude/skills/`
+4. `AGENTS.md` repository commands disagree with Zone B Key Commands
 
 Each alert lists the gap and the responsible doc.
 

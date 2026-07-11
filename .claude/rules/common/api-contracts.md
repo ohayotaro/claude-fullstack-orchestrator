@@ -53,10 +53,6 @@ Consistent shape across the surface:
 
 Every endpoint declares its auth requirement explicitly. Public endpoints are explicitly marked.
 
-## Hand-off
+## Ownership
 
-- Contract design and impl: `api-engineer`
-- Authn/authz on contracts: `auth-security-engineer`
-- Schema impact of contract changes: `data-engineer`
-
-The `check-codex-on-contract-edit.py` hook fires (severity: warn) on changes to contract artifacts.
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

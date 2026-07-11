@@ -1,114 +1,26 @@
 ---
 name: incident-response
-description: Frontend / cross-cutting production incident response. Coordinates triage, mitigation, root-cause analysis (via Codex), recovery, and post-mortem. Use for incidents where the symptom is in the frontend or visible to end users; for backend-specific issues use /incident-backend.
+description: PM intake for production incidents across frontend, backend, and infra, with Codex triage and gated mitigation.
+allowed-tools: "Bash(python3 *) Read Write Edit Glob Grep"
 ---
 
-# /incident-response
+# Incident Response
 
-## Purpose
+Incidents are T3 by default when mitigation touches production (deploys, migrations, credentials); triage itself is T0/T1 read-only.
 
-Bring an active production incident from "users are reporting X" to "fix deployed + post-mortem written" with structure and minimum thrashing.
+## Intake
 
-## When to use
+- Record symptom, blast radius, affected surfaces (web/mobile/API/DB/queue), start time (UTC), and current user impact.
+- Capture evidence paths: error tracker links, log excerpts (secrets scrubbed), 5xx rates, failing endpoints or screens.
+- Declare what mitigation is pre-authorized by the user (rollback, feature flag off, scale up) and what requires a fresh approval.
 
-- Frontend regression visible in production (broken page, white screen, stuck flow, 500 from BFF)
-- Cross-cutting incident affecting multiple platforms (auth flow broken on web + mobile)
-- User-visible degradation that is not strictly a backend issue
+## Acceptance Checklist
 
-For backend-only issues (5xx spike, queue stuck, DB outage), use `/incident-backend`.
+- AC includes restored service level with a measurable signal (error rate, latency, uptime check).
+- AC includes root cause identified with evidence, or explicit `unknown` with a follow-up task.
+- AC includes a regression guard (test, alert, or gate) for the failure mode.
+- Post-incident notes saved to `.claude/docs/reviews/` for commit-worthy learnings.
 
-## Phases
+## Delegation
 
-### Phase 1 — Stabilize
-
-1. Confirm scope: which surfaces, which users, since when
-2. Decide: rollback OR forward-fix
-   - Rollback if the causing change is recent and well-defined
-   - Forward-fix if the issue is ambient or rollback is risky
-3. If rollback: execute via `/deploy` with the previous-good version
-4. Communicate: status page / internal channel update with expected recovery time
-
-### Phase 2 — Mitigate
-
-1. If forward-fix: identify the smallest possible change that restores service
-2. Get a code review from Codex via `/codex-system` before deploying a hotfix
-3. Deploy via `/deploy` with `hotfix` override authorization
-
-### Phase 3 — Root cause
-
-After service is stable:
-
-1. Use `/codex-debugger` for deep analysis
-2. Identify:
-   - Trigger (what change / event caused the symptom)
-   - Latent issue (why the trigger caused failure)
-   - Detection lag (how long before we noticed)
-   - Mitigation cost (how long to recover)
-
-### Phase 4 — Durable fix
-
-1. Land the durable fix (separate from the hotfix)
-2. Add regression test that would have caught this
-3. If a hook would have caught it: extend `.claude/hooks/`
-
-### Phase 5 — Post-mortem
-
-Within 48 hours, write `.claude/logs/postmortems/<date>-<title>.md`:
-
-```
-## Summary
-- What happened
-- Impact (users / time / metrics)
-
-## Timeline (UTC)
-- Detection
-- Mitigation
-- Resolution
-- Postmortem
-
-## Trigger
-- The change / event that caused the symptom
-
-## Root cause
-- The latent condition that allowed the trigger to cause failure
-
-## Detection
-- How we noticed (alert / user report / monitoring)
-- Detection lag
-
-## Response
-- Steps taken in order
-- What worked, what didn't
-
-## Lessons
-- Action items (owners + due dates)
-- Process changes if any
-```
-
-### Phase 6 — Action items
-
-Track follow-ups to closure:
-- Process improvements (better alerting, runbook, hook)
-- Architectural changes (boundary, redundancy, circuit breaker)
-- Test coverage gaps
-
-## Output
-
-- Stabilization log
-- Hotfix deploy record
-- Codex debug record
-- Post-mortem document
-- Tracked action items
-
-## Quality gates (during incident)
-
-- Status updates every 30 minutes during active incident
-- Decisions logged in real time (channel or doc)
-- Hotfix has minimal blast radius and explicit rollback
-- Communication is honest about uncertainty
-
-## Notes
-
-- Blameless culture: post-mortems analyze processes, not people
-- Hotfix and durable fix are separate commits / deploys; do not combine
-- "We rolled back; we're fine" is incomplete — the post-mortem and durable fix close the loop
+Create the task brief and run read-only `plan` for triage first. Mitigation that mutates production follows the T3 flow: explicit user approval plus `deploy-gate` acknowledgment. Do not ask Codex to deploy; the user (or gated command) executes external actions.

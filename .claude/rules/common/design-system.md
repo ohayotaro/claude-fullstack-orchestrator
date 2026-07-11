@@ -12,7 +12,7 @@ Applies to all UI work, all platforms.
 ## Token rules
 
 - Naming follows semantic intent (`color.text.primary`) over visual description (`gray-700`)
-- Adding or changing a token requires Codex review (severity: warn) because it ripples across all consumers
+- Adding or changing a token is T2 by default because it ripples across all consumers
 - Tokens are declarative data, not code
 
 ## Primitives rules
@@ -21,8 +21,6 @@ Applies to all UI work, all platforms.
 - Prop contracts documented and stable
 - Escape hatches (`style`, `className`) are last resort; first try to extend the primitive
 
-## Hand-off
+## Ownership
 
-- Token / primitive changes: `design-system-engineer`
-- Feature surface composition: `ui-engineer`
-- Visual reference analysis: `visual-analyst` (Gemini)
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.

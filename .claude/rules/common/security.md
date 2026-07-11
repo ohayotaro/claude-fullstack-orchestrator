@@ -4,8 +4,8 @@ OWASP Top 10 is the baseline floor, not the ceiling.
 
 ## Mandatory rules
 
-- **Secrets**: env vars or secret manager only. Never in code, never in commits. `secret-scan.py` hook blocks (severity: require-explicit-override).
-- **HTTPS**: enforced in production. HSTS planned with infra-engineer.
+- **Secrets**: env vars or secret manager only. Never in code, never in commits. The `secret-scan.py` hook blocks writes containing secret-like values.
+- **HTTPS**: enforced in production. HSTS planned with the infra work (`/infra-review`).
 - **Validation**: at the edge. Never trust inbound data — validate type, shape, range, length, encoding.
 - **Authentication**: every endpoint declares its auth requirement (or is explicitly marked public)
 - **Authorization**: every resource access enforces ownership / membership; IDOR vectors considered for `/resource/:id` paths
@@ -33,7 +33,6 @@ OWASP Top 10 is the baseline floor, not the ceiling.
 
 For features touching auth, payments, PII, file upload/download: produce a brief threat model with the change set (assets, threats, mitigations).
 
-## Hand-off
+## Ownership
 
-- Auth/authz/secret design: `auth-security-engineer`
-- Infra-level (WAF, IAM, network): `infra-engineer`
+All engineering work in this domain is delegated to Codex through a task brief (`/codex-task`, see `common/codex-delegation.md`). Claude captures the requirements above as acceptance criteria in the brief; Codex designs, implements, and validates them.
