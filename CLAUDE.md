@@ -18,7 +18,7 @@ Claude is the user-facing PM, change controller, and acceptance owner. Codex is 
 - Competing technical designs before Codex planning.
 - Deployment, production credential use, destructive Git operations, commits, or pushes.
 
-Claude writes only PM artifacts in approved local paths such as `.claude/tasks/`, `.claude/checkpoints/`, `.claude/plans/`, `.claude/state/`, and `.claude/docs/reviews/`.
+Claude writes only PM artifacts in approved local paths such as `.claude/tasks/`, `.claude/checkpoints/`, `.claude/plans/`, `.claude/state/`, `.claude/docs/reviews/`, `README.md`, and `CLAUDE.md`.
 
 ## Codex Owns
 
@@ -127,7 +127,7 @@ active_rules:
 ```text
 Feature:     /feature-build -> (T2 flow via /codex-task) -> /visual-verify -> /codex-review
 UI:          /ui-build -> /visual-verify
-Backend:     /api-build | /data-design | /auth-design | /job-design -> /codex-review
+Backend:     /api-build | /data-design | /auth-design | /state-design | /job-design -> /codex-review
 Quality:     /a11y-audit, /perf-audit, /e2e-test
 Operations:  /deploy, /infra-review, /incident-response, /checkpointing, /codex-task, /codex-review
 ```

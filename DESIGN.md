@@ -1,6 +1,6 @@
 # Fullstack PM/Engineering Orchestrator — Specification
 
-Version 0.4.0 | 2026-07-12
+Version 0.4.1 | 2026-07-12
 
 ## 1. Overview
 
@@ -43,7 +43,9 @@ Defined normatively in `CLAUDE.md` (Claude side) and `AGENTS.md` (Codex side). T
 - `codex exec --strict-config --sandbox {read-only|workspace-write} --cd <root> --ephemeral --json --output-last-message <path> -`
 - Prompts via stdin; phase templates baked into `prompt_for_phase()`
 - Read-only sandbox for plan/review, workspace-write for implement
-- Model/effort precedence: CLI > phase env > general env > risk-tier default matrix (T0/T1 medium, T2 high, T3 xhigh; T3 fails closed below xhigh)
+- Model precedence: CLI > phase env > general env > optional T0 read-only `CODEX_FAST_MODEL` > omitted model flag
+- Effort precedence: CLI > phase env > general env > risk-tier default matrix (T0/T1 medium, T2 high, T3 xhigh; T3 fails closed below xhigh unless lower effort is deliberately supplied by CLI)
+- Phase timeout: `CODEX_PHASE_TIMEOUT_SECONDS`, default `3600` seconds, applies to `plan`, `implement`, and `review`
 - Artifacts per task: `brief.md`, `plan.md`, `approval.md`, `implementation-result.md`, `review.md`, `state.json`, `codex-events.jsonl`
 - Forbidden flags (`--full-auto`, `--yolo`, `--dangerously-bypass-approvals-and-sandbox`) are refused
 
@@ -51,8 +53,8 @@ Defined normatively in `CLAUDE.md` (Claude side) and `AGENTS.md` (Codex side). T
 
 | Hook | Event | Purpose |
 |---|---|---|
-| `pm-write-guard.py` | PreToolUse Edit\|Write | Blocks Claude writes outside PM paths (`.claude/tasks|checkpoints|plans|state|docs/reviews`, `README.md`, `CLAUDE.md`) |
-| `secret-scan.py` | PreToolUse Edit\|Write | Blocks writes containing secret-like values |
+| `pm-write-guard.py` | PreToolUse Edit\|Write\|MultiEdit\|NotebookEdit | Blocks Claude writes outside PM paths (`.claude/tasks|checkpoints|plans|state|docs/reviews`, `README.md`, `CLAUDE.md`) |
+| `secret-scan.py` | PreToolUse Edit\|Write\|MultiEdit\|NotebookEdit | Blocks writes containing secret-like values |
 | `deploy-gate.py` | PreToolUse Bash | Blocks production deploy / publish / prod-env commands without a 24h acknowledgment; `DEPLOY_FREEZE` freezes all deploys |
 | `post-bash-dispatcher.py` | PostToolUse Bash | Runs `error-to-codex.py` (error patterns -> brief-flow suggestion) and `log-cli-tools.py` (CLI telemetry) |
 | PreCompact echo | PreCompact | Reminds Claude to reload contracts and the current brief |

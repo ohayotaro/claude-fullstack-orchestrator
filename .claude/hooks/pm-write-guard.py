@@ -16,6 +16,7 @@ ALLOWED_RELATIVE_DIRS = (
     ".claude/docs/reviews",
 )
 ALLOWED_ROOT_FILES = ("README.md", "CLAUDE.md")
+WRITE_TOOLS = frozenset({"Write", "Edit", "MultiEdit", "NotebookEdit"})
 
 
 def is_within(child: Path, parent: Path) -> bool:
@@ -63,6 +64,20 @@ def is_allowed_path(file_path: str, project_dir: Path) -> tuple[bool, str]:
     )
 
 
+def target_path_for_tool(tool_name: str, tool_input: dict[str, object]) -> str | None:
+    """Return the target path for a recognized Claude write tool."""
+
+    if tool_name == "NotebookEdit":
+        value = tool_input.get("notebook_path")
+    elif tool_name in {"Write", "Edit", "MultiEdit"}:
+        value = tool_input.get("file_path")
+    else:
+        return None
+    if isinstance(value, str) and value.strip():
+        return value
+    return ""
+
+
 def main() -> int:
     """Claude Code PreToolUse entry point."""
 
@@ -75,10 +90,18 @@ def main() -> int:
     except json.JSONDecodeError:
         return 0
 
-    tool_input = data.get("tool_input", {})
-    file_path = tool_input.get("file_path", "")
-    if not file_path:
+    tool_name = data.get("tool_name")
+    if tool_name not in WRITE_TOOLS:
         return 0
+    tool_input = data.get("tool_input", {})
+    if not isinstance(tool_input, dict):
+        print(f"BLOCKED: {tool_name} tool input must be a JSON object", file=sys.stderr)
+        return 2
+
+    file_path = target_path_for_tool(str(tool_name), tool_input)
+    if not file_path:
+        print(f"BLOCKED: {tool_name} write target path is missing", file=sys.stderr)
+        return 2
 
     project_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
     allowed, reason = is_allowed_path(file_path, project_dir)

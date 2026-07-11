@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 Hook: secret-scan
-Event: PreToolUse (Edit / Write)
+Event: PreToolUse (Edit / Write / MultiEdit / NotebookEdit)
 Severity: require-explicit-override
 Purpose: Block writes that introduce hard-coded secrets / credentials.
 Override: set CLAUDE_ALLOW_SECRET_WRITE=1 (NOT RECOMMENDED).
 """
+from __future__ import annotations
+
 import json
 import os
 import re
@@ -33,20 +35,100 @@ ALLOWLIST_FILES = (
     "settings.example.json",
     "settings.local.json",
 )
-PLACEHOLDER_HINTS = [
-    r"<your[-_]",
-    r"\{\{",
-    r"REPLACE_ME",
-    r"YOUR_",
-    r"changeme",
-    r"example",
-    r"placeholder",
-    r"xxxxxxxx",
+WRITE_TOOLS = frozenset({"Write", "Edit", "MultiEdit", "NotebookEdit"})
+PLACEHOLDER_PATTERNS = [
+    re.compile(r"^(?:sk-|ghp_|AKIA)?x{8,}$", re.IGNORECASE),
 ]
+PLACEHOLDER_WORDS = frozenset(
+    {
+        "ACCESS",
+        "API",
+        "APP",
+        "AWS",
+        "CHANGE",
+        "CHANGEME",
+        "CLIENT",
+        "DUMMY",
+        "EXAMPLE",
+        "FAKE",
+        "GOOGLE",
+        "GITHUB",
+        "HERE",
+        "ID",
+        "KEY",
+        "ME",
+        "OPENAI",
+        "PASSWORD",
+        "PASSPHRASE",
+        "PLACEHOLDER",
+        "PRIVATE",
+        "REPLACE",
+        "SECRET",
+        "SLACK",
+        "TEST",
+        "TOKEN",
+        "VALUE",
+        "YOUR",
+    }
+)
 
 
 def looks_like_placeholder(value: str) -> bool:
-    return any(re.search(h, value, re.IGNORECASE) for h in PLACEHOLDER_HINTS)
+    candidate = value.strip()
+    assignment = re.search(r"[:=]\s*([\"']?)([^\"'\s]+)\1\s*$", candidate)
+    if assignment:
+        candidate = assignment.group(2)
+    candidate = candidate.strip().strip("\"'")
+    if any(pattern.fullmatch(candidate) for pattern in PLACEHOLDER_PATTERNS):
+        return True
+
+    if candidate.startswith("<") and candidate.endswith(">"):
+        candidate = candidate[1:-1].strip()
+    elif candidate.startswith("{{") and candidate.endswith("}}"):
+        candidate = candidate[2:-2].strip()
+
+    words = re.findall(r"[A-Za-z0-9]+", candidate)
+    if not words:
+        return False
+    return all(word.upper() in PLACEHOLDER_WORDS for word in words)
+
+
+def target_path_for_tool(tool_name: str, tool_input: dict[str, object]) -> str | None:
+    if tool_name == "NotebookEdit":
+        value = tool_input.get("notebook_path")
+    elif tool_name in {"Write", "Edit", "MultiEdit"}:
+        value = tool_input.get("file_path")
+    else:
+        return None
+    if isinstance(value, str) and value.strip():
+        return value
+    return ""
+
+
+def content_for_tool(tool_name: str, tool_input: dict[str, object]) -> str:
+    if tool_name == "Write":
+        value = tool_input.get("content")
+        return value if isinstance(value, str) else ""
+    if tool_name == "Edit":
+        value = tool_input.get("new_string")
+        return value if isinstance(value, str) else ""
+    if tool_name == "MultiEdit":
+        edits = tool_input.get("edits")
+        if not isinstance(edits, list):
+            return ""
+        new_strings = [
+            edit.get("new_string", "")
+            for edit in edits
+            if isinstance(edit, dict) and isinstance(edit.get("new_string"), str)
+        ]
+        return "\n".join(new_strings)
+    if tool_name == "NotebookEdit":
+        value = tool_input.get("new_source")
+        if isinstance(value, str):
+            return value
+        if isinstance(value, list):
+            return "".join(item for item in value if isinstance(item, str))
+    return ""
 
 
 def main():
@@ -58,24 +140,31 @@ def main():
     except Exception:
         sys.exit(0)
 
-    if event.get("tool_name") not in ("Edit", "Write"):
+    tool_name = event.get("tool_name")
+    if tool_name not in WRITE_TOOLS:
         sys.exit(0)
 
-    file_path = event.get("tool_input", {}).get("file_path", "")
+    tool_input = event.get("tool_input", {})
+    if not isinstance(tool_input, dict):
+        print(f"[secret-scan] BLOCKED: {tool_name} tool input must be a JSON object.", file=sys.stderr)
+        sys.exit(2)
+
+    file_path = target_path_for_tool(str(tool_name), tool_input)
+    if not file_path:
+        print(f"[secret-scan] BLOCKED: {tool_name} write target path is missing.", file=sys.stderr)
+        sys.exit(2)
+
     if any(file_path.endswith(a) for a in ALLOWLIST_FILES):
         sys.exit(0)
 
-    new_content = (
-        event.get("tool_input", {}).get("new_string")
-        or event.get("tool_input", {}).get("content")
-        or ""
-    )
+    new_content = content_for_tool(str(tool_name), tool_input)
     if not isinstance(new_content, str) or not new_content:
         sys.exit(0)
 
     for pattern in SECRET_PATTERNS:
-        match = pattern.search(new_content)
-        if match and not looks_like_placeholder(match.group(0)):
+        for match in pattern.finditer(new_content):
+            if looks_like_placeholder(match.group(0)):
+                continue
             print(
                 f"[secret-scan] BLOCKED: probable secret in {file_path} "
                 f"matching /{pattern.pattern}/.\n"

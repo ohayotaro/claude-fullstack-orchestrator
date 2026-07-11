@@ -13,6 +13,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
 FORBIDDEN_FLAGS = ("--full" + "-auto", "--" + "yolo")
 STATE_NAME = "state.json"
 EVENT_LOG_NAME = "codex-events.jsonl"
+DEFAULT_PHASE_TIMEOUT_SECONDS = 3600
 VALID_STATUSES = frozenset({"queued", "running", "succeeded", "failed", "blocked", "cancelled"})
 REQUIRED_STATE_KEYS = frozenset(
     {
@@ -260,7 +262,7 @@ def make_state(
 
 
 def write_state(task_dir: Path, state: HandoffState) -> None:
-    """Write state.json, enforcing the required schema keys."""
+    """Atomically write state.json, enforcing the required schema keys."""
 
     missing = sorted(REQUIRED_STATE_KEYS - state.keys())
     if missing:
@@ -270,10 +272,29 @@ def write_state(task_dir: Path, state: HandoffState) -> None:
     if not isinstance(status, str) or status not in VALID_STATUSES:
         raise HandoffError(f"Invalid state status: {status}")
 
-    state_path(task_dir).write_text(
-        json.dumps(state, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    encoded = json.dumps(state, indent=2, sort_keys=True) + "\n"
+    temp_name: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=task_dir,
+            prefix=f".{STATE_NAME}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_name = handle.name
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, state_path(task_dir))
+        temp_name = None
+    finally:
+        if temp_name is not None:
+            try:
+                os.unlink(temp_name)
+            except OSError:
+                pass
 
 
 def append_jsonl(path: Path, entry: HandoffState) -> None:
@@ -339,6 +360,27 @@ def validate_effort(effort: str, source: str) -> None:
     if effort not in VALID_EFFORTS:
         valid = ", ".join(sorted(VALID_EFFORTS))
         raise HandoffError(f"Invalid Codex effort from {source}: {effort!r}. Valid values: {valid}")
+
+
+def phase_timeout_seconds(environ: Mapping[str, str]) -> int:
+    """Return the configured Codex phase timeout in seconds."""
+
+    raw_timeout = non_empty(environ.get("CODEX_PHASE_TIMEOUT_SECONDS"))
+    if raw_timeout is None:
+        return DEFAULT_PHASE_TIMEOUT_SECONDS
+    try:
+        timeout = int(raw_timeout)
+    except ValueError as exc:
+        raise HandoffError(
+            "Invalid CODEX_PHASE_TIMEOUT_SECONDS: "
+            f"{raw_timeout!r}. Expected a positive integer number of seconds."
+        ) from exc
+    if timeout <= 0:
+        raise HandoffError(
+            "Invalid CODEX_PHASE_TIMEOUT_SECONDS: "
+            f"{raw_timeout!r}. Expected a positive integer number of seconds."
+        )
+    return timeout
 
 
 def phase_uses_read_only_sandbox(phase: str) -> bool:
@@ -761,6 +803,7 @@ def execute_phase(
     if tier is None:
         raise HandoffError("Brief must include a Risk Tier section before running Codex")
     selection = resolve_model_effort(phase, tier, cli_model, cli_effort, os.environ)
+    timeout_seconds = phase_timeout_seconds(os.environ)
     output_path = phase_result_path(phase, task_dir)
     result_path = project_relative_path(output_path, project_root)
     started_at = utc_now()
@@ -797,7 +840,36 @@ def execute_phase(
             capture_output=True,
             text=True,
             check=False,
+            timeout=timeout_seconds,
         )
+    except subprocess.TimeoutExpired as exc:
+        error = f"Codex {phase} timed out after {timeout_seconds} seconds"
+        git_after = git_metadata(project_root)
+        stdout = exc.stdout or exc.output or ""
+        stderr = exc.stderr or ""
+        if isinstance(stdout, bytes):
+            stdout = stdout.decode("utf-8", errors="replace")
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode("utf-8", errors="replace")
+        append_event_stdout(task_dir, stdout)
+        if str(stderr).strip():
+            (task_dir / f"codex-{phase}.stderr.txt").write_text(
+                str(stderr),
+                encoding="utf-8",
+            )
+        finish_phase_state(
+            task_dir=task_dir,
+            phase=phase,
+            started_at=started_at,
+            status="failed",
+            exit_code=None,
+            git_before=git_before,
+            git_after=git_after,
+            result_path=result_path,
+            selection=selection,
+            error=error,
+        )
+        raise HandoffError(error) from exc
     except OSError as exc:
         error = f"Failed to execute Codex: {exc}"
         git_after = git_metadata(project_root)

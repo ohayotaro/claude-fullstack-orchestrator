@@ -43,9 +43,8 @@ DEPLOY_PATTERNS = [
     r"--env-file\s+\S*\.env\.production\b",
 ]
 
-# Verbs that can never deploy. If the command starts with one of these, skip
-# the deploy-pattern scan entirely -- otherwise commit messages, echo strings,
-# and grep queries mentioning deploy keywords would false-positive.
+# Verbs that can never deploy. This is applied only to each shell segment, not
+# to a full compound command line.
 SAFE_LEAD_VERBS = {
     "git", "gh", "echo", "printf", "cat", "head", "tail", "less", "more",
     "grep", "rg", "awk", "sed", "wc", "sort", "uniq", "find", "ls", "pwd",
@@ -61,6 +60,209 @@ def first_executable_verb(command: str) -> str | None:
             continue
         return os.path.basename(tok)
     return None
+
+
+def _consume_command_substitution(command: str, start: int) -> tuple[str, int]:
+    """Return the contents and exclusive end index for a $() substitution."""
+
+    depth = 1
+    i = start + 2
+    content_start = i
+    quote: str | None = None
+    escaped = False
+    while i < len(command):
+        char = command[i]
+        if escaped:
+            escaped = False
+            i += 1
+            continue
+        if char == "\\":
+            escaped = True
+            i += 1
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+            i += 1
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            i += 1
+            continue
+        if command.startswith("$(", i):
+            depth += 1
+            i += 2
+            continue
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return command[content_start:i], i + 1
+        i += 1
+    return command[content_start:], len(command)
+
+
+def _consume_backtick_substitution(command: str, start: int) -> tuple[str, int]:
+    """Return the contents and exclusive end index for a backtick substitution."""
+
+    i = start + 1
+    chars: list[str] = []
+    escaped = False
+    while i < len(command):
+        char = command[i]
+        if escaped:
+            chars.append(char)
+            escaped = False
+            i += 1
+            continue
+        if char == "\\":
+            escaped = True
+            i += 1
+            continue
+        if char == "`":
+            return "".join(chars), i + 1
+        chars.append(char)
+        i += 1
+    return "".join(chars), len(command)
+
+
+def command_substitutions(command: str) -> list[str]:
+    """Extract command substitutions outside single quotes."""
+
+    substitutions: list[str] = []
+    i = 0
+    quote: str | None = None
+    escaped = False
+    while i < len(command):
+        char = command[i]
+        if escaped:
+            escaped = False
+            i += 1
+            continue
+        if char == "\\":
+            escaped = True
+            i += 1
+            continue
+        if quote == "'":
+            if char == "'":
+                quote = None
+            i += 1
+            continue
+        if quote == '"':
+            if char == '"':
+                quote = None
+                i += 1
+                continue
+            if command.startswith("$(", i):
+                contents, i = _consume_command_substitution(command, i)
+                substitutions.append(contents)
+                continue
+            if char == "`":
+                contents, i = _consume_backtick_substitution(command, i)
+                substitutions.append(contents)
+                continue
+            i += 1
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            i += 1
+            continue
+        if command.startswith("$(", i):
+            contents, i = _consume_command_substitution(command, i)
+            substitutions.append(contents)
+            continue
+        if char == "`":
+            contents, i = _consume_backtick_substitution(command, i)
+            substitutions.append(contents)
+            continue
+        i += 1
+    return substitutions
+
+
+def command_segments(command: str) -> list[str]:
+    """Split a shell command on unquoted compound-command separators."""
+
+    segments: list[str] = []
+    current: list[str] = []
+    i = 0
+    quote: str | None = None
+    escaped = False
+    while i < len(command):
+        char = command[i]
+        if escaped:
+            current.append(char)
+            escaped = False
+            i += 1
+            continue
+        if char == "\\":
+            current.append(char)
+            escaped = True
+            i += 1
+            continue
+        if quote:
+            current.append(char)
+            if char == quote:
+                quote = None
+            i += 1
+            continue
+        if char in {"'", '"'}:
+            current.append(char)
+            quote = char
+            i += 1
+            continue
+        if command.startswith("$(", i):
+            _, end = _consume_command_substitution(command, i)
+            current.append(command[i:end])
+            i = end
+            continue
+        if char == "`":
+            _, end = _consume_backtick_substitution(command, i)
+            current.append(command[i:end])
+            i = end
+            continue
+        if char == "\n" or char == ";" or char == "|":
+            segments.append("".join(current))
+            current = []
+            if i + 1 < len(command) and command[i : i + 2] in {"||"}:
+                i += 2
+            else:
+                i += 1
+            continue
+        if command.startswith("&&", i) or command.startswith("||", i):
+            segments.append("".join(current))
+            current = []
+            i += 2
+            continue
+        current.append(char)
+        i += 1
+    segments.append("".join(current))
+    return segments
+
+
+def deploy_pattern_present(segment: str) -> bool:
+    """Return whether a command segment contains a deploy indicator."""
+
+    return any(re.search(pattern, segment) for pattern in DEPLOY_PATTERNS)
+
+
+def deploy_command_detected(command: str) -> bool:
+    """Scan each command segment and nested substitution for deploy commands."""
+
+    for substitution in command_substitutions(command):
+        if deploy_command_detected(substitution):
+            return True
+
+    for segment in command_segments(command):
+        segment = segment.strip()
+        if not segment:
+            continue
+        verb = first_executable_verb(segment)
+        if verb and verb in SAFE_LEAD_VERBS:
+            continue
+        if deploy_pattern_present(segment):
+            return True
+    return False
 
 
 CHECKLIST = """Production-deploy acknowledgment required.
@@ -116,11 +318,7 @@ def main() -> None:
     if not command:
         sys.exit(0)
 
-    verb = first_executable_verb(command)
-    if verb and verb in SAFE_LEAD_VERBS:
-        sys.exit(0)
-
-    if not any(re.search(p, command) for p in DEPLOY_PATTERNS):
+    if not deploy_command_detected(command):
         sys.exit(0)
 
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR", ".")

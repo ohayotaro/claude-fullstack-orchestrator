@@ -113,6 +113,12 @@ python3 .claude/scripts/codex_handoff.py cancel <task-id>
 
 The runner centralizes Codex flags, uses stdin prompts, strict config, phase-specific sandboxing, non-interactive approval policy, ephemeral invocations, append-only event logs, output files, state tracking, and Git metadata. It never enables network access by default and never uses deprecated automation or sandbox-bypass flags.
 
+### Phase Timeout
+
+The `plan`, `implement`, and `review` phases run the Codex subprocess with a timeout. Configure it with `CODEX_PHASE_TIMEOUT_SECONDS`; the default is `3600` seconds. The value must be a positive integer, or the runner fails closed before invoking Codex.
+
+On timeout, the runner writes terminal `status: failed` to `state.json`, appends a failed finish marker with the timeout error to `codex-events.jsonl`, preserves any captured stdout/stderr, and surfaces a clear `codex_handoff` error. Lifecycle commands (`status`, `collect`, and `cancel`) do not spawn Codex and do not use this timeout.
+
 ### Model And Effort
 
 Phase commands may select a Codex model and reasoning effort without changing prompt content or phase contracts.
