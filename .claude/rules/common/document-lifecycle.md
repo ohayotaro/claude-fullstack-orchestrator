@@ -14,7 +14,7 @@ Each document has a single source-of-truth role and explicit update triggers. Dr
 | `DESIGN.md` | template architectural decisions (ADRs) | when policy changes |
 | `README.md` | how to install / use the template | when distribution flow or prerequisites change |
 | `.claude/docs/reviews/*.md` | commit-worthy review and incident records | per accepted T2/T3 task or incident |
-| `.claude/tasks/<id>/` (gitignored) | per-task working artifacts | per task |
+| `.claude/tasks/<id>/` (tracked; `codex-events.jsonl` local-only) | per-task working artifacts and acceptance audit trail | per task |
 
 ## Drift detection (run during `/checkpointing`)
 

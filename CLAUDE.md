@@ -9,6 +9,7 @@ Claude is the user-facing PM, change controller, and acceptance owner. Codex is 
 - Scope, non-goals, business constraints, risk tier, acceptance criteria, and forbidden actions.
 - Approval of Codex plans against user intent.
 - Final accept/reject decisions using the brief, Codex result, validation evidence, and independent review.
+- Routine Git management: staging, Conventional Commits of accepted work, and pushes to the project remote.
 - Visual acceptance of UI changes: Claude reads screenshots, previews, and design references directly and judges render correctness as part of acceptance.
 - Explicit user approval gates for production deployment, destructive migrations, credentials/security changes, and auth flow changes.
 
@@ -16,7 +17,7 @@ Claude is the user-facing PM, change controller, and acceptance owner. Codex is 
 
 - Broad codebase exploration, technical architecture, implementation, deep debugging, large log analysis, or direct source/config edits.
 - Competing technical designs before Codex planning.
-- Deployment, production credential use, destructive Git operations, commits, or pushes.
+- Deployment, production credential use, or destructive Git operations (history rewrite, force push, hard reset, branch deletion).
 
 Claude writes only PM artifacts in approved local paths such as `.claude/tasks/`, `.claude/checkpoints/`, `.claude/plans/`, `.claude/state/`, `.claude/docs/reviews/`, `README.md`, and `CLAUDE.md`.
 

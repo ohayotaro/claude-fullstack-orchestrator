@@ -20,7 +20,7 @@ Risk classification is a PM judgment. Hooks enforce only deterministic safety an
 
 ## Task Directory
 
-Create `.claude/tasks/<task-id>/brief.md`. The directory is gitignored and must contain no secrets.
+Create `.claude/tasks/<task-id>/brief.md`. Task artifacts are tracked in Git for auditability, except `.claude/tasks/*/codex-events.jsonl`, which remains local because it is a large machine replay log. No task artifact may contain secrets.
 
 ### Brief Schema
 
@@ -150,6 +150,8 @@ Valid effort values are `minimal`, `low`, `medium`, `high`, and `xhigh`. The run
 T3 tasks fail closed unless the resolved effort is `xhigh`. A lower phase or general env effort is rejected. A lower CLI effort is treated as a deliberate operator override.
 
 `state.json` and phase start markers in `codex-events.jsonl` record `requested_model`, `resolved_model`, `requested_effort`, `resolved_effort`, and `selection_source`.
+
+PM tier selection practice (which model and effort to request per phase kind) is defined in `.claude/rules/common/codex-delegation.md` under "Model And Effort Tier Policy".
 
 ### Background Execution
 

@@ -3,10 +3,9 @@
 .claude/logs/
 .claude/.cache/
 
-# PM orchestration artifacts (per-session, no secrets)
-.claude/tasks/
-.claude/checkpoints/
-.claude/plans/
+# PM orchestration artifacts: tasks/checkpoints/plans are tracked for auditability (no secrets).
+# Only the large Codex replay log and per-machine runtime state stay local.
+.claude/tasks/*/codex-events.jsonl
 .claude/state/
 
 # OS / editor
@@ -38,3 +37,6 @@ __pycache__/
 DerivedData/
 .gradle/
 .dart_tool/
+
+# Historical task whose result artifacts contain secret-scan test fixtures (placeholder tokens)
+.claude/tasks/2026-07-12-hook-runner-hardening/

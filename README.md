@@ -79,6 +79,9 @@ Your project code (`apps/`, `packages/`, `services/`, `src/`, etc.) is left alon
 4. A fresh Codex invocation reviews the diff independently (`APPROVE` / `CHANGES_REQUIRED`).
 5. Claude accepts or rejects: brief vs result vs review vs evidence. UI changes additionally require visual acceptance — Claude reads the captured screenshots directly.
 6. Production deploys are T3: your explicit approval plus the `deploy-gate` acknowledgment.
+7. Claude commits accepted work with Conventional Commits and pushes to the project remote. Destructive Git operations (history rewrite, force push, hard reset, branch deletion) stay outside PM ownership.
+
+Task artifacts under `.claude/tasks/`, `.claude/checkpoints/`, and `.claude/plans/` are tracked in Git as the audit trail behind each acceptance. Only `.claude/tasks/*/codex-events.jsonl` (machine replay log) and `.claude/state/` (per-machine runtime state) stay local. These artifacts must never contain secrets.
 
 ## Skills
 
