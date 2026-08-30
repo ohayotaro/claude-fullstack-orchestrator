@@ -155,3 +155,5 @@ Operations:  /deploy, /infra-review, /incident-response, /checkpointing, /codex-
 ## Current Context
 
 <!-- Rotated by /checkpointing. Keep at most 10 entries. -->
+
+- 2026-08-30: Synced claude-finance policies (Codex tier policy, PM Git ownership, tracked task artifacts) in `da163c4`. Checkpoint: `.claude/checkpoints/2026-08-30-finance-policy-sync.md`.
