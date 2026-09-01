@@ -1,0 +1,149 @@
+# Best-effort Grok Build permission translation from .claude/settings.json.
+# Verify the effective interpretation with `grok inspect` before relying on it.
+[permissions]
+default = "ask"
+deny_precedence = true
+
+[[permissions.rules]]
+name = "deny-recursive-force-delete"
+tool = "Bash"
+action = "deny"
+pattern = '''(?:^|[;&|\n][ \t\r\f\v]*|\$\([ \t\r\f\v]*|`[ \t\r\f\v]*)rm[ \t]+-rf(?=$|[ \t\r\n;&|)]|\$\(|`)'''
+
+[[permissions.rules]]
+name = "deny-hook-bypass"
+tool = "Bash"
+action = "deny"
+pattern = '''(?:^|[ \t\r\n;&|]|\$\([ \t\r\f\v]*|`[ \t\r\f\v]*)--no-verify(?=$|[ \t\r\n;&|)]|\$\(|`)'''
+
+[[permissions.rules]]
+name = "deny-codex-network-search"
+tool = "Bash"
+action = "deny"
+pattern = '''(?:^|[;&|\n][ \t\r\f\v]*|\$\([ \t\r\f\v]*|`[ \t\r\f\v]*)codex(?:[ \t]+\S+)*[ \t]+--search(?=$|[ \t\r\n;&|)]|\$\(|`)'''
+
+[[permissions.rules]]
+name = "deny-codex-sandbox-bypass"
+tool = "Bash"
+action = "deny"
+pattern = '''(?:^|[;&|\n][ \t\r\f\v]*|\$\([ \t\r\f\v]*|`[ \t\r\f\v]*)codex(?:[ \t]+\S+)*[ \t]+--dangerously-bypass-approvals-and-sandbox(?=$|[ \t\r\n;&|)]|\$\(|`)'''
+
+[[permissions.rules]]
+name = "allow-git-status"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*git\s+status(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-git-diff"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*git\s+diff(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-git-log"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*git\s+log(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-python3"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*python3(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-codex"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*codex(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-mkdir"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*mkdir(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-ls"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*ls(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-pnpm-test"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*pnpm\s+test(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-pnpm-lint"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*pnpm\s+lint(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-npm-test"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*npm\s+test(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-npm-run-lint"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*npm\s+run\s+lint(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-pytest"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*pytest(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-ruff"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*ruff(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-mypy"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*mypy(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-uv-run"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*uv\s+run(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-swiftlint"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*swiftlint(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-ktlint"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*ktlint(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-dart"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*dart(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-flutter"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*flutter(?:\s|$)'''
+
+[[permissions.rules]]
+name = "allow-playwright"
+tool = "Bash"
+action = "allow"
+pattern = '''^\s*playwright(?:\s|$)'''

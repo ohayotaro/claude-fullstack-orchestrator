@@ -1,0 +1,28 @@
+{
+  "exit_code": 0,
+  "finished_at": "2026-09-01T03:44:45.367175+00:00",
+  "git_after": {
+    "branch": "main",
+    "head": "772740f289fea3065244015a45fa574253760119",
+    "status": "M .claude/rules/common/document-lifecycle.md\n M .claude/skills/checkpointing/SKILL.md\n M CLAUDE.md\n?? .claude/hooks/tests/\n?? .claude/plans/\n?? .claude/tasks/\n?? .grok/"
+  },
+  "git_before": {
+    "branch": "main",
+    "head": "772740f289fea3065244015a45fa574253760119",
+    "status": "M .claude/rules/common/document-lifecycle.md\n M .claude/skills/checkpointing/SKILL.md\n M CLAUDE.md\n?? .claude/hooks/tests/\n?? .claude/plans/\n?? .claude/tasks/\n?? .grok/"
+  },
+  "phase": "review",
+  "pid": 87027,
+  "requested_effort": "high",
+  "requested_model": null,
+  "resolved_effort": "high",
+  "resolved_model": null,
+  "result_path": ".claude/tasks/2026-09-01-grok-pm-adapter/review.md",
+  "selection_source": {
+    "effort": "cli",
+    "model": "omitted"
+  },
+  "started_at": "2026-09-01T03:37:54.402128+00:00",
+  "status": "succeeded",
+  "task_id": "2026-09-01-grok-pm-adapter"
+}

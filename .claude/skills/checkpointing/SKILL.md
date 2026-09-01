@@ -14,4 +14,5 @@ Checkpointing is usually T0 or T1. It may write only allowed PM artifact paths s
 - Keep secrets and raw credentials out of checkpoint files.
 - Link to `brief.md`, `plan.md`, `approval.md`, the `implementation-result` Markdown artifact, `review.md`, and `state.json` instead of duplicating large content.
 - Rotate the `Current Context` section of `CLAUDE.md` (Zone C) when it exceeds 10 entries; archive removed entries into the checkpoint file.
+- Check whether `.grok/config.toml` permission intent has drifted from `.claude/settings.json`; report any mismatch without weakening either file's deny rules.
 - If runtime code changes are needed, stop and use `/codex-task`.

@@ -1,0 +1,43 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Write|write|write_file|Edit|edit|edit_file|MultiEdit|multi_edit|NotebookEdit|notebook_edit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$GROK_WORKSPACE_ROOT/.grok/hooks/grok_hook_adapter.py\" --event PreToolUse --handler secret-scan",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$GROK_WORKSPACE_ROOT/.grok/hooks/grok_hook_adapter.py\" --event PreToolUse --handler pm-write-guard",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "^(Bash|bash|shell)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$GROK_WORKSPACE_ROOT/.grok/hooks/grok_hook_adapter.py\" --event PreToolUse --handler deploy-gate",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Bash|bash|shell)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$GROK_WORKSPACE_ROOT/.grok/hooks/grok_hook_adapter.py\" --event PostToolUse --handler post-bash-dispatcher",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -24,6 +24,7 @@ Trigger an alert if any of the following:
 2. `DESIGN.md` references file paths or commands that no longer exist
 3. A skill referenced in CLAUDE.md is missing under `.claude/skills/`
 4. `AGENTS.md` repository commands disagree with Zone B Key Commands
+5. `.grok/config.toml` permission intent disagrees with `.claude/settings.json`
 
 Each alert lists the gap and the responsible doc.
 
