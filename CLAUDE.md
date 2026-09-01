@@ -156,5 +156,5 @@ Operations:  /deploy, /infra-review, /incident-response, /checkpointing, /codex-
 
 <!-- Rotated by /checkpointing. Keep at most 10 entries. -->
 
-- 2026-09-01: Added the `.grok/` thin PM adapter; `.claude/` remains the canonical policy and artifact store.
+- 2026-09-01: Accepted `.grok/` thin PM adapter (T2, `20d9eb2`); `.claude/` remains canonical. Live `grok inspect`/`hooks-trust` verification pending on a Grok Build machine. Checkpoint: `.claude/checkpoints/2026-09-01-grok-pm-adapter.md`.
 - 2026-08-30: Synced claude-finance policies (Codex tier policy, PM Git ownership, tracked task artifacts) in `da163c4`. Checkpoint: `.claude/checkpoints/2026-08-30-finance-policy-sync.md`.
