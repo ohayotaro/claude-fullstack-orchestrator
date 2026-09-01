@@ -1,0 +1,28 @@
+{
+  "exit_code": 0,
+  "finished_at": "2026-09-01T04:28:44.037272+00:00",
+  "git_after": {
+    "branch": "main",
+    "head": "c5dfbbc3530cafe7e4491b8ea0c0290b0b109794",
+    "status": "M .claude/docs/CODEX_TASK_CONTRACT.md\n?? .claude/tasks/2026-09-01-contract-result-capture-doc/"
+  },
+  "git_before": {
+    "branch": "main",
+    "head": "c5dfbbc3530cafe7e4491b8ea0c0290b0b109794",
+    "status": "?? .claude/tasks/2026-09-01-contract-result-capture-doc/"
+  },
+  "phase": "implement",
+  "pid": 89203,
+  "requested_effort": "medium",
+  "requested_model": "gpt-5.6-luna",
+  "resolved_effort": "medium",
+  "resolved_model": "gpt-5.6-luna",
+  "result_path": ".claude/tasks/2026-09-01-contract-result-capture-doc/implementation-result.md",
+  "selection_source": {
+    "effort": "cli",
+    "model": "cli"
+  },
+  "started_at": "2026-09-01T04:28:03.360168+00:00",
+  "status": "succeeded",
+  "task_id": "2026-09-01-contract-result-capture-doc"
+}

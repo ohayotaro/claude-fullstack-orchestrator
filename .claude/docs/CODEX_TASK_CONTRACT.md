@@ -86,6 +86,10 @@ Codex implementation output is saved as the Markdown artifact with stem `impleme
 - Acceptance-criteria mapping
 - Residual risks, debt, or blockers
 
+### Result Artifact Capture
+
+The runner invokes Codex with `--output-last-message <result file>`: the phase result artifact (`plan.md`, `implementation-result.md`, `review.md`) is the final message Codex emits. Any direct edit Codex makes to that result file during the run is overwritten at phase end. Therefore, the complete required output—including mandated validation transcripts and evidence—must be emitted inline as the final message, never written to the result file directly.
+
 ## Review Output
 
 Codex review output is saved as `review.md` and must include:
